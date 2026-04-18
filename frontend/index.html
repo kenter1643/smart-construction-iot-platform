@@ -1665,7 +1665,26 @@
         }
 
         function getDeviceInitial(device) {
-            return (device.name || device.deviceId || '?').trim().slice(0, 1).toUpperCase();
+            const source = device && (device.name || device.deviceId)
+                ? String(device.name || device.deviceId)
+                : '?';
+            return source.trim().slice(0, 1).toUpperCase() || '?';
+        }
+
+        function getAlertSummary(status) {
+            if (status === 'online') {
+                return '暂无活跃告警。';
+            }
+
+            if (status === 'offline' || status === 'disconnected') {
+                return '设备当前不在线，请检查连接状态。';
+            }
+
+            if (status === 'error') {
+                return '设备处于错误状态，请尽快排查。';
+            }
+
+            return '设备状态未知，请确认数据来源。';
         }
 
         function getSafeNumericId(id) {
@@ -1824,9 +1843,7 @@
                         `).join('')}
                     </dl>`
                 : `<p class="muted">暂无通讯配置。</p>`;
-            const alertSummary = device.status === 'online'
-                ? '<p class="muted">暂无活跃告警。</p>'
-                : '<p class="muted">设备当前不在线，请检查连接状态。</p>';
+            const alertSummary = `<p class="muted">${escapeHtml(getAlertSummary(device.status))}</p>`;
             const editButton = safeId !== null
                 ? `<button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); editDevice(${safeId})">
                         <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>

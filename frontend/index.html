@@ -1731,13 +1731,35 @@
             }, 3000);
         }
 
+        async function parseJsonResponse(response) {
+            try {
+                return await response.json();
+            } catch (error) {
+                throw new Error('服务返回了无效 JSON');
+            }
+        }
+
+        function getApiErrorMessage(data, fallback) {
+            return data && (data.details || data.error || data.message)
+                ? String(data.details || data.error || data.message)
+                : fallback;
+        }
+
+        function setInputValue(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value;
+            }
+            return element;
+        }
+
         async function checkApiStatus() {
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
 
             try {
                 const response = await fetch(HEALTH_CHECK_URL);
-                const data = await response.json();
+                const data = await parseJsonResponse(response);
 
                 if (data.success) {
                     statusDot.classList.remove('disconnected');
@@ -1765,8 +1787,17 @@
 
             try {
                 const response = await fetch(`${API_BASE}/devices`);
-                const data = await response.json();
-                allDevices = data?.data?.devices || [];
+                const data = await parseJsonResponse(response);
+
+                if (!response.ok) {
+                    throw new Error(getApiErrorMessage(data, '获取设备列表失败'));
+                }
+
+                if (!data || !data.data || !Array.isArray(data.data.devices)) {
+                    throw new Error('设备列表响应格式无效');
+                }
+
+                allDevices = data.data.devices;
                 if (selectedDeviceId && allDevices.some((device) => String(device.id) === String(selectedDeviceId))) {
                     // keep current selection
                 } else {
@@ -2081,19 +2112,27 @@
         }
 
         function openAddDeviceModal() {
-            document.getElementById('add-deviceId').value = '';
-            document.getElementById('add-name').value = '';
-            document.getElementById('add-type').value = '';
-            document.getElementById('add-protocol').value = '';
-            document.getElementById('add-status').value = 'online';
-            document.getElementById('add-device-modal').classList.add('show');
+            const addDeviceId = setInputValue('add-deviceId', '');
+            setInputValue('add-name', '');
+            setInputValue('add-type', '');
+            setInputValue('add-protocol', '');
+            setInputValue('add-status', 'online');
+            const modal = document.getElementById('add-device-modal');
+            if (modal) {
+                modal.classList.add('show');
+            }
             window.requestAnimationFrame(() => {
-                document.getElementById('add-deviceId').focus();
+                if (addDeviceId && typeof addDeviceId.focus === 'function') {
+                    addDeviceId.focus();
+                }
             });
         }
 
         function closeAddDeviceModal() {
-            document.getElementById('add-device-modal').classList.remove('show');
+            const modal = document.getElementById('add-device-modal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
         }
 
         async function saveAddDevice() {
@@ -2116,7 +2155,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(deviceData)
                 });
-                const data = await response.json();
+                const data = await parseJsonResponse(response);
 
                 if (response.ok) {
                     const createdDevice = data?.data;
@@ -2127,18 +2166,18 @@
                     await fetchDevices();
                     showToast('设备保存成功');
                 } else {
-                    showToast(`添加设备失败：${data.details || data.error || '未知错误'}`, 'error');
+                    showToast(`添加设备失败：${getApiErrorMessage(data, '未知错误')}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to add device:', error);
-                showToast('操作失败，请检查网络连接', 'error');
+                showToast(error.message === '服务返回了无效 JSON' ? error.message : '操作失败，请检查网络连接', 'error');
             }
         }
 
         async function editDevice(id) {
             try {
                 const response = await fetch(`${API_BASE}/devices/${id}`);
-                const data = await response.json();
+                const data = await parseJsonResponse(response);
                 const device = data.data;
 
                 currentEditId = id;
@@ -2176,18 +2215,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(deviceData)
                 });
-                const data = await response.json();
+                const data = await parseJsonResponse(response);
 
                 if (response.ok) {
                     closeEditModal();
                     await fetchDevices();
                     showToast('设备更新成功');
                 } else {
-                    showToast(`更新设备失败：${data.details || data.error || '未知错误'}`, 'error');
+                    showToast(`更新设备失败：${getApiErrorMessage(data, '未知错误')}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to update device:', error);
-                showToast('操作失败，请检查网络连接', 'error');
+                showToast(error.message === '服务返回了无效 JSON' ? error.message : '操作失败，请检查网络连接', 'error');
             }
         }
 
@@ -2200,17 +2239,17 @@
                 const response = await fetch(`${API_BASE}/devices/${id}`, {
                     method: 'DELETE'
                 });
-                const data = await response.json();
+                const data = await parseJsonResponse(response);
 
                 if (response.ok) {
                     await fetchDevices();
                     showToast('设备删除成功');
                 } else {
-                    showToast(`删除设备失败：${data.details || data.error || '未知错误'}`, 'error');
+                    showToast(`删除设备失败：${getApiErrorMessage(data, '未知错误')}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to delete device:', error);
-                showToast('操作失败，请检查网络连接', 'error');
+                showToast(error.message === '服务返回了无效 JSON' ? error.message : '操作失败，请检查网络连接', 'error');
             }
         }
 

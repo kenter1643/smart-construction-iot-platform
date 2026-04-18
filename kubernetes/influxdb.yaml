@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smart-iot-influxdb
+  namespace: smart-iot
+  labels:
+    app: smart-iot-influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smart-iot-influxdb
+  template:
+    metadata:
+      labels:
+        app: smart-iot-influxdb
+    spec:
+      containers:
+      - name: influxdb
+        image: influxdb:2.7
+        env:
+        - name: DOCKER_INFLUXDB_INIT_MODE
+          value: setup
+        - name: DOCKER_INFLUXDB_INIT_USERNAME
+          value: smartiot
+        - name: DOCKER_INFLUXDB_INIT_PASSWORD
+          value: smartiot123
+        - name: DOCKER_INFLUXDB_INIT_ORG
+          value: smart-construction
+        - name: DOCKER_INFLUXDB_INIT_BUCKET
+          value: sensor-data
+        - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+          value: my-super-secret-auth-token
+        ports:
+        - containerPort: 8086
+        volumeMounts:
+        - mountPath: /var/lib/influxdb2
+          name: influxdb-storage
+        - mountPath: /etc/influxdb2
+          name: influxdb-config
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8086
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8086
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: influxdb-storage
+        persistentVolumeClaim:
+          claimName: smart-iot-influxdb-pvc
+      - name: influxdb-config
+        persistentVolumeClaim:
+          claimName: smart-iot-influxdb-config-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smart-iot-influxdb
+  namespace: smart-iot
+  labels:
+    app: smart-iot-influxdb
+spec:
+  type: ClusterIP
+  selector:
+    app: smart-iot-influxdb
+  ports:
+  - protocol: TCP
+    port: 8086
+    targetPort: 8086
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smart-iot-influxdb-pvc
+  namespace: smart-iot
+  labels:
+    app: smart-iot-influxdb
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smart-iot-influxdb-config-pvc
+  namespace: smart-iot
+  labels:
+    app: smart-iot-influxdb
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

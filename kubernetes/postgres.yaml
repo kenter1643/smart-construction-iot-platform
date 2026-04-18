@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smart-iot-postgres
+  namespace: smart-iot
+  labels:
+    app: smart-iot-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smart-iot-postgres
+  template:
+    metadata:
+      labels:
+        app: smart-iot-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: smartiot
+        - name: POSTGRES_PASSWORD
+          value: smartiot123
+        - name: POSTGRES_DB
+          value: smartiot
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage
+        - mountPath: /docker-entrypoint-initdb.d
+          name: postgres-init
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "smartiot"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "smartiot"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: smart-iot-postgres-pvc
+      - name: postgres-init
+        configMap:
+          name: smart-iot-postgres-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smart-iot-postgres
+  namespace: smart-iot
+  labels:
+    app: smart-iot-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: smart-iot-postgres
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smart-iot-postgres-pvc
+  namespace: smart-iot
+  labels:
+    app: smart-iot-postgres
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-iot-postgres-init
+  namespace: smart-iot
+data:
+  01-init.sql: |
+    CREATE TABLE IF NOT EXISTS devices (
+        id SERIAL PRIMARY KEY,
+        device_id VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        type VARCHAR(100) NOT NULL,
+        protocol VARCHAR(50) NOT NULL,
+        configuration JSONB,
+        status VARCHAR(50) DEFAULT 'offline',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS sensor_metadata (
+        id SERIAL PRIMARY KEY,
+        device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
+        sensor_name VARCHAR(255) NOT NULL,
+        sensor_type VARCHAR(100) NOT NULL,
+        unit VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) NOT NULL UNIQUE,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS alert_rules (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        sensor_type VARCHAR(100) NOT NULL,
+        condition TEXT NOT NULL,
+        priority VARCHAR(20) NOT NULL DEFAULT 'medium',
+        enabled BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS alerts (
+        id SERIAL PRIMARY KEY,
+        rule_id INTEGER REFERENCES alert_rules(id),
+        device_id INTEGER REFERENCES devices(id),
+        sensor_value TEXT,
+        status VARCHAR(50) DEFAULT 'active',
+        acknowledged_at TIMESTAMP,
+        acknowledged_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(100),
+        resource_id INTEGER,
+        details JSONB,
+        ip_address VARCHAR(45),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS video_recordings (
+        id SERIAL PRIMARY KEY,
+        device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
+        start_time TIMESTAMP NOT NULL,
+        end_time TIMESTAMP,
+        file_path VARCHAR(500),
+        file_size BIGINT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    INSERT INTO users (username, email, password_hash, role)
+    VALUES ('admin', 'admin@example.com', 'admin123', 'admin')
+    ON CONFLICT (username) DO NOTHING;

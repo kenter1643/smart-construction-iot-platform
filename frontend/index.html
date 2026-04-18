@@ -1766,7 +1766,6 @@
                 const data = await response.json();
                 allDevices = data.data.devices;
                 applyFilters();
-                updateStats(allDevices);
             } catch (error) {
                 console.error('Failed to fetch devices:', error);
                 tbody.innerHTML = `
@@ -1788,13 +1787,21 @@
         function updateStats(devices) {
             const totalDevices = devices.length;
             const onlineDevices = devices.filter((d) => d.status === 'online').length;
-            const offlineDevices = devices.filter((d) => d.status === 'offline').length;
+            const offlineDevices = devices.filter((d) => ['offline', 'disconnected', 'error'].includes(d.status)).length;
             const alerts = offlineDevices;
+            const onlineRate = totalDevices > 0 ? Math.round((onlineDevices / totalDevices) * 100) : 0;
 
-            document.getElementById('total-devices').textContent = totalDevices;
-            document.getElementById('online-devices').textContent = onlineDevices;
-            document.getElementById('offline-devices').textContent = offlineDevices;
-            document.getElementById('alerts').textContent = alerts;
+            const totalDevicesEl = document.getElementById('total-devices');
+            const onlineDevicesEl = document.getElementById('online-devices');
+            const offlineDevicesEl = document.getElementById('offline-devices');
+            const alertsEl = document.getElementById('alerts');
+            const onlineRateEl = document.getElementById('online-rate');
+
+            if (totalDevicesEl) totalDevicesEl.textContent = totalDevices;
+            if (onlineDevicesEl) onlineDevicesEl.textContent = onlineDevices;
+            if (offlineDevicesEl) offlineDevicesEl.textContent = offlineDevices;
+            if (alertsEl) alertsEl.textContent = alerts;
+            if (onlineRateEl) onlineRateEl.textContent = `在线率 ${onlineRate}%`;
 
             document.querySelectorAll('.stat-value').forEach((el) => {
                 el.style.animation = 'none';
@@ -1921,6 +1928,11 @@
 
         function renderDevices(devices) {
             const tbody = document.getElementById('device-table-body');
+            const resultSummary = document.getElementById('result-summary');
+
+            if (resultSummary) {
+                resultSummary.textContent = `共 ${devices.length} 台设备`;
+            }
 
             if (devices.length === 0) {
                 selectedDeviceId = null;
@@ -2017,14 +2029,14 @@
         }
 
         function applyFilters() {
-            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const searchTerm = document.getElementById('search').value.trim().toLowerCase();
             const filterType = document.getElementById('filter-type').value;
             const filterProtocol = document.getElementById('filter-protocol').value;
             const filterStatus = document.getElementById('filter-status').value;
 
             filteredDevices = allDevices.filter((device) => {
-                const deviceName = String(device.name || '').toLowerCase();
-                const deviceIdentifier = String(device.deviceId || '').toLowerCase();
+                const deviceName = String(device?.name ?? '').toLowerCase();
+                const deviceIdentifier = String(device?.deviceId ?? '').toLowerCase();
                 const matchesSearch = !searchTerm ||
                     deviceName.includes(searchTerm) ||
                     deviceIdentifier.includes(searchTerm);
@@ -2035,8 +2047,8 @@
                 return matchesSearch && matchesType && matchesProtocol && matchesStatus;
             });
 
-            renderDevices(filteredDevices);
             updateStats(filteredDevices);
+            renderDevices(filteredDevices);
         }
 
         function searchDevices() {
@@ -2048,6 +2060,7 @@
             document.getElementById('filter-type').value = '';
             document.getElementById('filter-protocol').value = '';
             document.getElementById('filter-status').value = '';
+            selectedDeviceId = null;
             applyFilters();
         }
 

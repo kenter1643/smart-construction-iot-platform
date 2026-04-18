@@ -591,6 +591,21 @@
             color: var(--warning);
         }
 
+        .status-badge.disconnected {
+            background: rgba(245, 158, 11, 0.16);
+            color: var(--warning);
+        }
+
+        .status-badge.error {
+            background: rgba(220, 38, 38, 0.12);
+            color: var(--danger);
+        }
+
+        .status-badge.unknown {
+            background: rgba(100, 116, 139, 0.12);
+            color: var(--muted);
+        }
+
         .row-actions,
         .device-actions {
             display: flex;
@@ -1529,6 +1544,11 @@
             return labels[status] || status || '';
         }
 
+        function getStatusClass(status) {
+            const allowed = ['online', 'offline', 'disconnected', 'error'];
+            return allowed.includes(status) ? status : 'unknown';
+        }
+
         function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
@@ -1665,7 +1685,7 @@
                 const safeDeviceId = escapeHtml(device.deviceId);
                 const safeTypeLabel = escapeHtml(getTypeLabel(device.type));
                 const safeProtocol = escapeHtml(device.protocol);
-                const statusClass = device.status || '';
+                const statusClass = getStatusClass(device.status);
                 const safeStatusLabel = escapeHtml(getStatusLabel(device.status));
                 const updatedAt = device.updatedAt || device.updated_at || device.createdAt || device.created_at || '';
                 const safeUpdatedAt = updatedAt ? escapeHtml(updatedAt) : '暂无记录';

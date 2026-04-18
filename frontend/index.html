@@ -524,6 +524,11 @@
             background: #f8fbff;
         }
 
+        .device-table tbody tr.selected {
+            background: rgba(37, 99, 235, 0.08);
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+
         .device-cell {
             display: flex;
             gap: var(--space-lg);
@@ -625,6 +630,106 @@
             margin: 0;
             font-size: 0.98rem;
             line-height: 1.6;
+        }
+
+        .detail-header {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: var(--space-md);
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .detail-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+
+        .detail-meta {
+            min-width: 0;
+        }
+
+        .detail-meta h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 1.06rem;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .detail-meta p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            word-break: break-word;
+        }
+
+        .detail-status {
+            justify-self: start;
+        }
+
+        .detail-section {
+            padding: 16px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .detail-section:first-of-type {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .detail-section h4 {
+            margin: 0 0 12px;
+            color: var(--text);
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .detail-list {
+            margin: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .detail-list div {
+            display: grid;
+            gap: 4px;
+        }
+
+        .detail-list dt {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .detail-list dd {
+            margin: 0;
+            color: var(--text);
+            font-size: 0.92rem;
+            word-break: break-word;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .muted {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
         }
 
         .btn {
@@ -1523,6 +1628,9 @@
         const API_BASE = 'http://localhost:3001/api/v1';
         const HEALTH_CHECK_URL = 'http://localhost:3001/health';
         let allDevices = [];
+        let filteredDevices = [];
+        let selectedDeviceId = null;
+        let currentEditId = null;
 
         function getTypeLabel(type) {
             const labels = {
@@ -1531,7 +1639,7 @@
                 actuator: '执行器',
                 controller: '控制器'
             };
-            return labels[type] || type;
+            return labels[type] || type || '未知类型';
         }
 
         function getStatusLabel(status) {
@@ -1541,12 +1649,28 @@
                 disconnected: '断开连接',
                 error: '错误'
             };
-            return labels[status] || status || '';
+            return labels[status] || status || '未知';
         }
 
         function getStatusClass(status) {
             const allowed = ['online', 'offline', 'disconnected', 'error'];
             return allowed.includes(status) ? status : 'unknown';
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '暂无记录';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '暂无记录';
+            return date.toLocaleString('zh-CN', { hour12: false });
+        }
+
+        function getDeviceInitial(device) {
+            return (device.name || device.deviceId || '?').trim().slice(0, 1).toUpperCase();
+        }
+
+        function getSafeNumericId(id) {
+            const numericId = Number(id);
+            return Number.isInteger(numericId) ? numericId : null;
         }
 
         function escapeHtml(value) {
@@ -1660,10 +1784,129 @@
             });
         }
 
+        function renderDeviceDetails(device) {
+            const panel = document.getElementById('device-detail-panel');
+
+            if (!device) {
+                panel.innerHTML = `
+                    <div class="detail-empty">
+                        <div>
+                            <h3>选择设备查看详情</h3>
+                            <p>从左侧列表中点击任意设备，查看当前状态、配置和操作入口。</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const safeName = escapeHtml(device.name || '未命名设备');
+            const safeDeviceId = escapeHtml(device.deviceId || '暂无编号');
+            const safeTypeLabel = escapeHtml(getTypeLabel(device.type));
+            const statusClass = getStatusClass(device.status);
+            const safeStatusLabel = escapeHtml(getStatusLabel(device.status));
+            const safeUpdatedAt = escapeHtml(formatDateTime(device.updatedAt || device.updated_at));
+            const safeCreatedAt = escapeHtml(formatDateTime(device.createdAt || device.created_at));
+            const safeProtocol = escapeHtml(device.protocol || '未知');
+            const safeInternalId = escapeHtml(device.id ?? '未知');
+            const deviceInitial = escapeHtml(getDeviceInitial(device));
+            const safeId = getSafeNumericId(device.id);
+            const configurationSource = device.configuration && typeof device.configuration === 'object'
+                ? device.configuration
+                : {};
+            const configurationEntries = Object.entries(configurationSource).slice(0, 4);
+            const configurationSummary = configurationEntries.length > 0
+                ? `<dl class="detail-list">
+                        ${configurationEntries.map(([key, value]) => `
+                            <div>
+                                <dt>${escapeHtml(key)}</dt>
+                                <dd>${escapeHtml(typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value))}</dd>
+                            </div>
+                        `).join('')}
+                    </dl>`
+                : `<p class="muted">暂无通讯配置。</p>`;
+            const alertSummary = device.status === 'online'
+                ? '<p class="muted">暂无活跃告警。</p>'
+                : '<p class="muted">设备当前不在线，请检查连接状态。</p>';
+            const editButton = safeId !== null
+                ? `<button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); editDevice(${safeId})">
+                        <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
+                        <span>编辑</span>
+                    </button>`
+                : `<button type="button" class="btn btn-primary btn-sm" disabled aria-disabled="true" title="无效设备 ID">
+                        <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
+                        <span>编辑</span>
+                    </button>`;
+            const deleteButton = safeId !== null
+                ? `<button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDevice(${safeId})">
+                        <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
+                        <span>删除</span>
+                    </button>`
+                : `<button type="button" class="btn btn-danger btn-sm" disabled aria-disabled="true" title="无效设备 ID">
+                        <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
+                        <span>删除</span>
+                    </button>`;
+
+            panel.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-avatar" aria-hidden="true">${deviceInitial}</div>
+                    <div class="detail-meta">
+                        <h3>${safeName}</h3>
+                        <p>${safeDeviceId}</p>
+                    </div>
+                    <span class="detail-status status-badge ${statusClass}">${safeStatusLabel}</span>
+                </div>
+                <div class="detail-section">
+                    <h4>基础信息</h4>
+                    <dl class="detail-list">
+                        <div>
+                            <dt>设备类型</dt>
+                            <dd>${safeTypeLabel}</dd>
+                        </div>
+                        <div>
+                            <dt>通讯协议</dt>
+                            <dd>${safeProtocol}</dd>
+                        </div>
+                        <div>
+                            <dt>内部 ID</dt>
+                            <dd>${safeInternalId}</dd>
+                        </div>
+                        <div>
+                            <dt>创建时间</dt>
+                            <dd>${safeCreatedAt}</dd>
+                        </div>
+                        <div>
+                            <dt>最后更新</dt>
+                            <dd>${safeUpdatedAt}</dd>
+                        </div>
+                    </dl>
+                </div>
+                <div class="detail-section">
+                    <h4>通讯配置</h4>
+                    ${configurationSummary}
+                </div>
+                <div class="detail-section">
+                    <h4>最近告警</h4>
+                    ${alertSummary}
+                </div>
+                <div class="detail-actions">
+                    ${editButton}
+                    ${deleteButton}
+                </div>
+            `;
+        }
+
+        function selectDevice(id) {
+            selectedDeviceId = id;
+            renderDevices(filteredDevices);
+            const selected = allDevices.find((device) => String(device.id) === String(id));
+            renderDeviceDetails(selected || null);
+        }
+
         function renderDevices(devices) {
             const tbody = document.getElementById('device-table-body');
 
             if (devices.length === 0) {
+                selectedDeviceId = null;
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center;">
@@ -1677,23 +1920,28 @@
                         </td>
                     </tr>
                 `;
+                renderDeviceDetails(null);
                 return;
             }
 
+            if (!devices.some((device) => String(device.id) === String(selectedDeviceId))) {
+                selectedDeviceId = devices[0].id;
+            }
+
             tbody.innerHTML = devices.map((device) => {
-                const safeName = escapeHtml(device.name);
-                const safeDeviceId = escapeHtml(device.deviceId);
+                const safeName = escapeHtml(device.name || '未命名设备');
+                const safeDeviceId = escapeHtml(device.deviceId || '暂无编号');
                 const safeTypeLabel = escapeHtml(getTypeLabel(device.type));
-                const safeProtocol = escapeHtml(device.protocol);
+                const safeProtocol = escapeHtml(device.protocol || '未知');
                 const statusClass = getStatusClass(device.status);
                 const safeStatusLabel = escapeHtml(getStatusLabel(device.status));
-                const updatedAt = device.updatedAt || device.updated_at || device.createdAt || device.created_at || '';
-                const safeUpdatedAt = updatedAt ? escapeHtml(updatedAt) : '暂无记录';
-                const numericId = Number(device.id);
-                const hasSafeId = Number.isFinite(numericId);
-                const deviceInitial = safeName ? safeName.trim().charAt(0) : '设';
+                const safeUpdatedAt = escapeHtml(formatDateTime(device.updatedAt || device.updated_at || device.createdAt || device.created_at));
+                const numericId = getSafeNumericId(device.id);
+                const hasSafeId = numericId !== null;
+                const isSelected = String(device.id) === String(selectedDeviceId);
+                const deviceInitial = escapeHtml(getDeviceInitial(device));
                 const editButton = hasSafeId
-                    ? `<button type="button" class="btn btn-primary btn-sm" onclick="editDevice(${numericId})">
+                    ? `<button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); editDevice(${numericId})">
                                     <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
                                     <span>编辑</span>
                                 </button>`
@@ -1702,7 +1950,7 @@
                                     <span>编辑</span>
                                 </button>`;
                 const deleteButton = hasSafeId
-                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteDevice(${numericId})">
+                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteDevice(${numericId})">
                                     <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
                                     <span>删除</span>
                                 </button>`
@@ -1710,9 +1958,10 @@
                                     <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
                                     <span>删除</span>
                                 </button>`;
+                const rowOnclick = hasSafeId ? ` onclick="selectDevice(${numericId})"` : '';
 
                 return `
-                    <tr>
+                    <tr${isSelected ? ' class="selected"' : ''}${rowOnclick}>
                         <td data-label="设备">
                             <div class="device-cell">
                                 <div class="device-avatar" aria-hidden="true">${escapeHtml(deviceInitial)}</div>
@@ -1745,6 +1994,9 @@
                     </tr>
                 `;
             }).join('');
+
+            const selected = devices.find((device) => String(device.id) === String(selectedDeviceId));
+            renderDeviceDetails(selected || devices[0] || null);
         }
 
         function applyFilters() {
@@ -1753,10 +2005,12 @@
             const filterProtocol = document.getElementById('filter-protocol').value;
             const filterStatus = document.getElementById('filter-status').value;
 
-            const filteredDevices = allDevices.filter((device) => {
+            filteredDevices = allDevices.filter((device) => {
+                const deviceName = String(device.name || '').toLowerCase();
+                const deviceIdentifier = String(device.deviceId || '').toLowerCase();
                 const matchesSearch = !searchTerm ||
-                    device.name.toLowerCase().includes(searchTerm) ||
-                    device.deviceId.toLowerCase().includes(searchTerm);
+                    deviceName.includes(searchTerm) ||
+                    deviceIdentifier.includes(searchTerm);
                 const matchesType = !filterType || device.type === filterType;
                 const matchesProtocol = !filterProtocol || device.protocol === filterProtocol;
                 const matchesStatus = !filterStatus || device.status === filterStatus;
@@ -1822,8 +2076,6 @@
                 showToast('添加设备失败，请检查网络连接', 'error');
             }
         }
-
-        let currentEditId = null;
 
         async function editDevice(id) {
             try {

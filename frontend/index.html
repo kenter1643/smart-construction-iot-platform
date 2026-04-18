@@ -6,7 +6,7 @@
     <title>智慧工地物联网平台 - 设备管理</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&amp;family=Fira+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-shell: #0f172a;
@@ -1281,6 +1281,15 @@
             return labels[type] || type;
         }
 
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function getToastIcon(type) {
             const iconId = type === 'success' ? '#icon-check' : '#icon-x';
             return `<svg class="icon toast-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="${iconId}"></use></svg>`;
@@ -1291,7 +1300,10 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.setAttribute('role', 'status');
-            toast.innerHTML = `${getToastIcon(type)}<span>${message}</span>`;
+            toast.insertAdjacentHTML('beforeend', getToastIcon(type));
+            const text = document.createElement('span');
+            text.textContent = message;
+            toast.appendChild(text);
             container.appendChild(toast);
 
             setTimeout(() => {
@@ -1401,35 +1413,56 @@
             }
 
             tbody.innerHTML = devices.map((device) => {
+                const safeName = escapeHtml(device.name);
+                const safeDeviceId = escapeHtml(device.deviceId);
+                const safeTypeLabel = escapeHtml(getTypeLabel(device.type));
+                const safeProtocol = escapeHtml(device.protocol);
+                const statusClass = device.status === 'online' ? 'online' : 'offline';
+                const safeStatusLabel = escapeHtml(device.status === 'online' ? '在线' : '离线');
+                const numericId = Number(device.id);
+                const hasSafeId = Number.isFinite(numericId);
+                const editButton = hasSafeId
+                    ? `<button type="button" class="btn btn-primary btn-sm" onclick="editDevice(${numericId})">
+                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
+                                    <span>编辑</span>
+                                </button>`
+                    : `<button type="button" class="btn btn-primary btn-sm" disabled aria-disabled="true" title="无效设备 ID">
+                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
+                                    <span>编辑</span>
+                                </button>`;
+                const deleteButton = hasSafeId
+                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteDevice(${numericId})">
+                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
+                                    <span>删除</span>
+                                </button>`
+                    : `<button type="button" class="btn btn-danger btn-sm" disabled aria-disabled="true" title="无效设备 ID">
+                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
+                                    <span>删除</span>
+                                </button>`;
+
                 return `
                     <tr>
                         <td>
-                            <div style="font-weight: 500;">${device.name}</div>
+                            <div style="font-weight: 500;">${safeName}</div>
                         </td>
                         <td>
-                            <code style="font-family: 'Fira Code', monospace; font-size: 0.875rem; color: var(--muted);">${device.deviceId}</code>
+                            <code style="font-family: 'Fira Code', monospace; font-size: 0.875rem; color: var(--muted);">${safeDeviceId}</code>
                         </td>
                         <td>
-                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${getTypeLabel(device.type)}</span>
+                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${safeTypeLabel}</span>
                         </td>
                         <td>
-                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${device.protocol}</span>
+                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${safeProtocol}</span>
                         </td>
                         <td>
-                            <span class="status-badge ${device.status}">
-                                ${device.status === 'online' ? '在线' : '离线'}
+                            <span class="status-badge ${statusClass}">
+                                ${safeStatusLabel}
                             </span>
                         </td>
                         <td>
                             <div class="device-actions">
-                                <button type="button" class="btn btn-primary btn-sm" onclick="editDevice(${device.id})">
-                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
-                                    <span>编辑</span>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteDevice(${device.id})">
-                                    <svg class="icon" viewBox="0 0 24 24"><use href="#icon-trash"></use></svg>
-                                    <span>删除</span>
-                                </button>
+                                ${editButton}
+                                ${deleteButton}
                             </div>
                         </td>
                     </tr>

@@ -1519,6 +1519,16 @@
             return labels[type] || type;
         }
 
+        function getStatusLabel(status) {
+            const labels = {
+                online: '在线',
+                offline: '离线',
+                disconnected: '断开连接',
+                error: '错误'
+            };
+            return labels[status] || status || '';
+        }
+
         function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
@@ -1655,10 +1665,13 @@
                 const safeDeviceId = escapeHtml(device.deviceId);
                 const safeTypeLabel = escapeHtml(getTypeLabel(device.type));
                 const safeProtocol = escapeHtml(device.protocol);
-                const statusClass = device.status === 'online' ? 'online' : 'offline';
-                const safeStatusLabel = escapeHtml(device.status === 'online' ? '在线' : '离线');
+                const statusClass = device.status || '';
+                const safeStatusLabel = escapeHtml(getStatusLabel(device.status));
+                const updatedAt = device.updatedAt || device.updated_at || device.createdAt || device.created_at || '';
+                const safeUpdatedAt = updatedAt ? escapeHtml(updatedAt) : '暂无记录';
                 const numericId = Number(device.id);
                 const hasSafeId = Number.isFinite(numericId);
+                const deviceInitial = safeName ? safeName.trim().charAt(0) : '设';
                 const editButton = hasSafeId
                     ? `<button type="button" class="btn btn-primary btn-sm" onclick="editDevice(${numericId})">
                                     <svg class="icon" viewBox="0 0 24 24"><use href="#icon-edit"></use></svg>
@@ -1680,25 +1693,31 @@
 
                 return `
                     <tr>
-                        <td>
-                            <div style="font-weight: 500;">${safeName}</div>
+                        <td data-label="设备">
+                            <div class="device-cell">
+                                <div class="device-avatar" aria-hidden="true">${escapeHtml(deviceInitial)}</div>
+                                <div>
+                                    <strong>${safeName}</strong>
+                                    <span>${safeDeviceId}</span>
+                                </div>
+                            </div>
                         </td>
-                        <td>
-                            <code style="font-family: 'Fira Code', monospace; font-size: 0.875rem; color: var(--muted);">${safeDeviceId}</code>
+                        <td data-label="类型">
+                            <span class="tag">${safeTypeLabel}</span>
                         </td>
-                        <td>
-                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${safeTypeLabel}</span>
+                        <td data-label="协议">
+                            <span class="tag">${safeProtocol}</span>
                         </td>
-                        <td>
-                            <span style="display: inline-block; padding: var(--space-xs) var(--space-sm); background: var(--surface-soft); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--muted);">${safeProtocol}</span>
-                        </td>
-                        <td>
+                        <td data-label="状态">
                             <span class="status-badge ${statusClass}">
                                 ${safeStatusLabel}
                             </span>
                         </td>
-                        <td>
-                            <div class="device-actions">
+                        <td data-label="更新时间">
+                            ${safeUpdatedAt}
+                        </td>
+                        <td data-label="操作">
+                            <div class="row-actions">
                                 ${editButton}
                                 ${deleteButton}
                             </div>

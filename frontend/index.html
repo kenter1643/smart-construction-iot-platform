@@ -1561,6 +1561,8 @@
                         <select id="add-status" class="form-control">
                             <option value="online">在线</option>
                             <option value="offline">离线</option>
+                            <option value="disconnected">断连</option>
+                            <option value="error">错误</option>
                         </select>
                     </div>
                 </div>
@@ -1613,6 +1615,8 @@
                         <select id="edit-status" class="form-control">
                             <option value="online">在线</option>
                             <option value="offline">离线</option>
+                            <option value="disconnected">断连</option>
+                            <option value="error">错误</option>
                         </select>
                     </div>
                 </div>
@@ -1737,26 +1741,24 @@
 
                 if (data.success) {
                     statusDot.classList.remove('disconnected');
-                    statusText.textContent = `${data.data.mode}模式 - 已连接`;
+                    statusText.textContent = `${data.data?.mode || 'API'} 模式 · 已连接`;
                 } else {
                     throw new Error('API response error');
                 }
             } catch (error) {
                 statusDot.classList.add('disconnected');
-                statusText.textContent = '未连接';
+                statusText.textContent = 'API 未连接';
                 console.error('API connection failed:', error);
             }
         }
 
         async function fetchDevices() {
             const tbody = document.getElementById('device-table-body');
+            const resultSummary = document.getElementById('result-summary');
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" style="text-align: center;">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <div class="loading-text">加载中...</div>
-                        </div>
+                        <div class="loading-text">正在加载设备数据</div>
                     </td>
                 </tr>
             `;
@@ -1764,10 +1766,23 @@
             try {
                 const response = await fetch(`${API_BASE}/devices`);
                 const data = await response.json();
-                allDevices = data.data.devices;
+                allDevices = data?.data?.devices || [];
+                if (selectedDeviceId && allDevices.some((device) => String(device.id) === String(selectedDeviceId))) {
+                    // keep current selection
+                } else {
+                    selectedDeviceId = allDevices.length > 0 ? allDevices[0].id : null;
+                }
                 applyFilters();
             } catch (error) {
                 console.error('Failed to fetch devices:', error);
+                allDevices = [];
+                filteredDevices = [];
+                selectedDeviceId = null;
+                updateStats([]);
+                renderDeviceDetails(null);
+                if (resultSummary) {
+                    resultSummary.textContent = '设备列表加载失败';
+                }
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center;">
@@ -1777,6 +1792,7 @@
                                 </div>
                                 <h3>获取设备列表失败</h3>
                                 <p>请确保后端服务运行在 http://localhost:3001</p>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="fetchDevices()">重试</button>
                             </div>
                         </td>
                     </tr>
@@ -2065,7 +2081,15 @@
         }
 
         function openAddDeviceModal() {
+            document.getElementById('add-deviceId').value = '';
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-type').value = '';
+            document.getElementById('add-protocol').value = '';
+            document.getElementById('add-status').value = 'online';
             document.getElementById('add-device-modal').classList.add('show');
+            window.requestAnimationFrame(() => {
+                document.getElementById('add-deviceId').focus();
+            });
         }
 
         function closeAddDeviceModal() {
@@ -2092,18 +2116,22 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(deviceData)
                 });
+                const data = await response.json();
 
                 if (response.ok) {
+                    const createdDevice = data?.data;
+                    if (createdDevice && createdDevice.id !== undefined && createdDevice.id !== null) {
+                        selectedDeviceId = createdDevice.id;
+                    }
                     closeAddDeviceModal();
-                    fetchDevices();
-                    showToast('设备添加成功');
+                    await fetchDevices();
+                    showToast('设备保存成功');
                 } else {
-                    const data = await response.json();
-                    showToast(`添加失败：${data.details}`, 'error');
+                    showToast(`添加设备失败：${data.details || data.error || '未知错误'}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to add device:', error);
-                showToast('添加设备失败，请检查网络连接', 'error');
+                showToast('操作失败，请检查网络连接', 'error');
             }
         }
 
@@ -2148,18 +2176,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(deviceData)
                 });
+                const data = await response.json();
 
                 if (response.ok) {
                     closeEditModal();
-                    fetchDevices();
+                    await fetchDevices();
                     showToast('设备更新成功');
                 } else {
-                    const data = await response.json();
-                    showToast(`更新失败：${data.details}`, 'error');
+                    showToast(`更新设备失败：${data.details || data.error || '未知错误'}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to update device:', error);
-                showToast('更新设备失败，请检查网络连接', 'error');
+                showToast('操作失败，请检查网络连接', 'error');
             }
         }
 
@@ -2172,17 +2200,17 @@
                 const response = await fetch(`${API_BASE}/devices/${id}`, {
                     method: 'DELETE'
                 });
+                const data = await response.json();
 
                 if (response.ok) {
-                    fetchDevices();
+                    await fetchDevices();
                     showToast('设备删除成功');
                 } else {
-                    const data = await response.json();
-                    showToast(`删除失败：${data.details}`, 'error');
+                    showToast(`删除设备失败：${data.details || data.error || '未知错误'}`, 'error');
                 }
             } catch (error) {
                 console.error('Failed to delete device:', error);
-                showToast('删除设备失败，请检查网络连接', 'error');
+                showToast('操作失败，请检查网络连接', 'error');
             }
         }
 

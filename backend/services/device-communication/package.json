@@ -1,0 +1,17 @@
+{
+  "name": "device-communication",
+  "version": "1.0.0",
+  "description": "Device communication service for smart construction IoT platform",
+  "main": "src/modbus/modbusTcpHandler.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "iot",
+    "modbus",
+    "tcp",
+    "communication"
+  ],
+  "author": "Smart Construction Team",
+  "license": "MIT"
+}

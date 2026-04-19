@@ -1,0 +1,17 @@
+{
+  "name": "video-streaming",
+  "version": "1.0.0",
+  "description": "Video streaming service for smart construction IoT platform",
+  "main": "src/rtsp/rtspIngestService.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "video",
+    "rtsp",
+    "streaming",
+    "iot"
+  ],
+  "author": "Smart Construction Team",
+  "license": "MIT"
+}

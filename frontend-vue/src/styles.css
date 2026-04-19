@@ -1,0 +1,98 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef3f8;
+  color: #172033;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #172033;
+  color: #cbd5e1;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.menu {
+  border-right: none;
+}
+
+.workspace {
+  padding: 16px;
+}
+
+.stats {
+  margin-bottom: 16px;
+}
+
+.stat-title {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.stat-value {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.panel {
+  margin-bottom: 16px;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.filters {
+  margin-bottom: 12px;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  border: 1px solid #dbe3ee;
+  background: #0f172a;
+}
+
+.video-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+}

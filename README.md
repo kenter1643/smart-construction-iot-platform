@@ -3,6 +3,9 @@
 ## 项目概述
 
 智慧工地物联网平台是一个基于微服务架构的 IoT 平台，旨在解决建筑行业在安全、效率和实时监控方面的挑战。
+当前仓库已引入新一代技术栈迁移基线：
+- 前端：`Vue 3 + Vite + Element Plus`
+- 后端：`Rust (Axum) + MySQL + InfluxDB`
 
 ## 功能特性
 
@@ -25,13 +28,15 @@ smart-construction-iot-platform/
 │   │   ├── device-communication/    # 设备通讯服务
 │   │   ├── video-streaming/         # 视频流服务
 │   │   ├── device-management/       # 设备管理服务
+│   │   ├── device-management-rs/    # Rust 设备管理服务（MySQL + InfluxDB）
 │   │   ├── data-storage/            # 数据存储服务
 │   │   ├── alerts-notifications/    # 告警与通知服务
 │   │   └── user-auth/               # 用户认证服务
 │   └── shared/
 │       ├── utils/                   # 共享工具
 │       └── models/                  # 共享数据模型
-├── frontend/                         # 前端应用
+├── frontend/                         # 现有静态前端
+├── frontend-vue/                     # Vue 3 管理后台（Element Plus）
 ├── docker/                           # Docker 配置
 ├── kubernetes/                       # Kubernetes 配置
 └── docs/                             # 文档
@@ -44,6 +49,24 @@ smart-construction-iot-platform/
 ```bash
 cd docker
 docker-compose up -d
+```
+
+默认会启动 `MySQL + InfluxDB + RabbitMQ + Kafka + Redis`。
+
+### 启动 Vue 管理后台
+
+```bash
+cd frontend-vue
+npm install
+npm run dev
+```
+
+### 启动 Rust 设备管理服务
+
+```bash
+cd backend/services/device-management-rs
+cp .env.example .env
+cargo run
 ```
 
 ### 使用 Kubernetes 部署

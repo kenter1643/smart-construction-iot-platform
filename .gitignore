@@ -2,3 +2,5 @@
 .superpowers/
 node_modules/
 .env
+frontend-vue/node_modules/
+backend/services/device-management-rs/target/

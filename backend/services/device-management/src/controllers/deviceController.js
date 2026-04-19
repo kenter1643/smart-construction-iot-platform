@@ -1,5 +1,5 @@
-const Device = require('../../../shared/models/device');
-const SensorMetadata = require('../../../shared/models/sensor');
+const Device = require('../../../../shared/models/device');
+const SensorMetadata = require('../../../../shared/models/sensor');
 const { pgPool } = require('../utils/db');
 
 class DeviceController {

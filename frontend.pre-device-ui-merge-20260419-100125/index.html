@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧工地物联网平台 - 设备管理</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables from Admin Dashboard Style */
+        :root {
+            --color-primary: #3699FF;
+            --color-primary-hover: #2B85E4;
+            --color-secondary: #F3F6F9;
+            --color-accent: #1BC5BD;
+            --color-background: #F5F7FA;
+            --color-foreground: #181C32;
+            --color-muted: #E4E6EF;
+            --color-border: #E4E6EF;
+            --color-destructive: #F64E60;
+            --color-success: #1BC5BD;
+            --color-warning: #FFA800;
+            --color-info: #7E8299;
+            --color-header: #FFFFFF;
+            --color-sidebar: #181C32;
+            --color-sidebar-foreground: #B5B5C3;
+            --color-sidebar-active: #3699FF;
+            --color-table-header: #F3F6F9;
+            --color-table-row: #FFFFFF;
+            --color-table-hover: #F8F9FA;
+
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --radius-xl: 12px;
+
+            --transition-fast: 150ms;
+            --transition-normal: 200ms;
+            --transition-slow: 300ms;
+        }
+
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fira Sans', sans-serif;
+            background: var(--color-background);
+            color: var(--color-foreground);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* App Container */
+        .app-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--color-sidebar);
+            color: var(--color-sidebar-foreground);
+            border-right: 1px solid var(--color-border);
+            padding: var(--spacing-lg) 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            width: 260px;
+        }
+
+        .sidebar-header {
+            padding: 0 var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: var(--spacing-lg);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .sidebar-logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--color-primary);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .sidebar-logo-text h1 {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .sidebar-logo-text p {
+            font-size: 0.75rem;
+            color: var(--color-sidebar-foreground);
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 0 var(--spacing-md);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-md);
+            color: var(--color-sidebar-foreground);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--color-sidebar-active);
+            color: white;
+        }
+
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-footer {
+            padding: var(--spacing-md);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--color-success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: var(--color-destructive);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main-content {
+            grid-column: 2;
+            margin-left: 260px;
+            background: var(--color-background);
+        }
+
+        /* Top Header */
+        .top-header {
+            background: var(--color-header);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--spacing-md) var(--spacing-xl);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 0.875rem;
+            color: var(--color-info);
+        }
+
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .breadcrumb-item.active {
+            color: var(--color-foreground);
+            font-weight: 500;
+        }
+
+        /* Page Content */
+        .page-content {
+            padding: var(--spacing-xl);
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .page-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .page-title h1 {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-foreground);
+        }
+
+        .page-description {
+            color: var(--color-info);
+            font-size: 0.9375rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background: var(--color-header);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            display: flex;
+            gap: var(--spacing-lg);
+            transition: all var(--transition-normal);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.blue { background: #E7F5FF; color: #3B82F6; }
+        .stat-icon.green { background: #D3F9D8; color: #22C55E; }
+        .stat-icon.yellow { background: #FEF3C7; color: #F59E0B; }
+        .stat-icon.red { background: #FEE2E2; color: #EF4444; }
+
+        .stat-content h3 {
+            color: var(--color-info);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .stat-value {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-foreground);
+            line-height: 1;
+        }
+
+        .stat-trend {
+            margin-top: var(--spacing-sm);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .stat-trend.up { color: var(--color-success); }
+        .stat-trend.down { color: var(--color-destructive); }
+
+        /* Cards */
+        .card {
+            background: var(--color-header);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-lg);
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .card-title h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-foreground);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: 'Fira Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+            border-color: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--color-header);
+            color: var(--color-foreground);
+            border-color: var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-secondary);
+            border-color: var(--color-info);
+        }
+
+        .btn-danger {
+            background: var(--color-destructive);
+            color: white;
+            border-color: var(--color-destructive);
+        }
+
+        .btn-danger:hover {
+            background: #E53E50;
+            border-color: #E53E50;
+        }
+
+        .btn-sm {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.8125rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-foreground);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--color-header);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-foreground);
+            font-family: 'Fira Sans', sans-serif;
+            font-size: 1rem;
+            transition: all var(--transition-normal);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--color-info);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        /* Search and Filter */
+        .search-filter-bar {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: var(--spacing-md);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-info);
+            pointer-events: none;
+        }
+
+        .search-input-wrapper .form-control {
+            padding-left: var(--spacing-xl);
+        }
+
+        /* Device Table */
+        .device-table-container {
+            overflow-x: auto;
+        }
+
+        .device-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .device-table thead {
+            background: var(--color-table-header);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .device-table th {
+            padding: var(--spacing-lg);
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-info);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .device-table td {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.9375rem;
+            color: var(--color-foreground);
+        }
+
+        .device-table tbody tr {
+            background: var(--color-table-row);
+            transition: all var(--transition-normal);
+        }
+
+        .device-table tbody tr:hover {
+            background: var(--color-table-hover);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            font-family: 'Fira Sans', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.online {
+            background: #D3F9D8;
+            color: #16A34A;
+        }
+
+        .status-badge.offline {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn var(--transition-normal) ease-out;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: var(--color-header);
+            border-radius: var(--radius-lg);
+            max-width: 560px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            animation: slideUp var(--transition-slow) ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .modal-header h2 {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-foreground);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: var(--color-info);
+            font-size: 1.25rem;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--color-muted);
+            color: var(--color-foreground);
+        }
+
+        .modal-body {
+            padding: var(--spacing-lg);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--color-info);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-foreground);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: var(--spacing-md);
+            color: var(--color-info);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: var(--spacing-xl);
+            right: var(--spacing-xl);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .toast {
+            background: var(--color-header);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            color: var(--color-foreground);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            animation: slideUp var(--transition-normal) ease-out;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .toast.success { border-left: 4px solid var(--color-success); }
+        .toast.error { border-left: 4px solid var(--color-destructive); }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-background);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: var(--radius-sm);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-info);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 200px 1fr;
+            }
+
+            .sidebar {
+                width: 200px;
+            }
+
+            .main-content {
+                margin-left: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .search-filter-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .device-table-container {
+                font-size: 0.875rem;
+            }
+
+            .device-table th,
+            .device-table td {
+                padding: var(--spacing-sm);
+            }
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">🏗️</div>
+                    <div class="sidebar-logo-text">
+                        <h1>智慧工地 IoT</h1>
+                        <p>设备管理系统</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-item active">
+                    <div class="nav-item-icon">📊</div>
+                    <span>设备管理</span>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-icon">📈</div>
+                    <span>实时监控</span>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-icon">🎥</div>
+                    <span>视频管理</span>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-icon">⚠️</div>
+                    <span>告警中心</span>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-item-icon">⚙️</div>
+                    <span>系统设置</span>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="api-status" id="api-status">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">检查中...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <div class="top-header">
+                <div class="breadcrumb">
+                    <div class="breadcrumb-item">
+                        <span>首页</span>
+                        <span>/</span>
+                    </div>
+                    <div class="breadcrumb-item active">
+                        <span>设备管理</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>设备管理</h1>
+                    </div>
+                    <div class="page-description">
+                        <p>管理和监控您的物联网设备</p>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📊</div>
+                        <div class="stat-content">
+                            <h3>总设备数</h3>
+                            <div class="stat-value" id="total-devices">0</div>
+                            <div class="stat-trend up">
+                                <span>↑</span> 2 新增
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">🟢</div>
+                        <div class="stat-content">
+                            <h3>在线设备</h3>
+                            <div class="stat-value" id="online-devices">0</div>
+                            <div class="stat-trend up">
+                                <span>↑</span> 100% 正常
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">🔴</div>
+                        <div class="stat-content">
+                            <h3>离线设备</h3>
+                            <div class="stat-value" id="offline-devices">0</div>
+                            <div class="stat-trend down">
+                                <span>↓</span> 0% 异常
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">🚨</div>
+                        <div class="stat-content">
+                            <h3>告警</h3>
+                            <div class="stat-value" id="alerts">0</div>
+                            <div class="stat-trend up">
+                                <span>↑</span> 0 待处理
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h2>搜索和筛选</h2>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="resetFilters()">
+                                🔄 重置
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding: 0 var(--spacing-lg) var(--spacing-lg);">
+                        <div class="search-filter-bar">
+                            <div class="search-input-wrapper">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="search" class="form-control" placeholder="搜索设备名称或 ID..." oninput="searchDevices()">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <select id="filter-type" class="form-control" onchange="searchDevices()">
+                                    <option value="">全部类型</option>
+                                    <option value="sensor">传感器</option>
+                                    <option value="camera">摄像头</option>
+                                    <option value="actuator">执行器</option>
+                                    <option value="controller">控制器</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <select id="filter-protocol" class="form-control" onchange="searchDevices()">
+                                    <option value="">全部协议</option>
+                                    <option value="mqtt">MQTT</option>
+                                    <option value="http">HTTP</option>
+                                    <option value="modbus-tcp">Modbus TCP</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <select id="filter-status" class="form-control" onchange="searchDevices()">
+                                    <option value="">全部状态</option>
+                                    <option value="online">在线</option>
+                                    <option value="offline">离线</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="openAddDeviceModal()">
+                                ➕ 添加设备
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device List Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h2>设备列表</h2>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary btn-sm">
+                                📥 导出
+                            </button>
+                        </div>
+                    </div>
+                    <div class="device-table-container">
+                        <table class="device-table">
+                            <thead>
+                                <tr>
+                                    <th>设备名称</th>
+                                    <th>设备ID</th>
+                                    <th>类型</th>
+                                    <th>协议</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="device-table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">
+                                        <div class="loading">
+                                            <div class="spinner"></div>
+                                            <div class="loading-text">加载中...</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div class="modal-overlay" id="add-device-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>➕ 添加新设备</h2>
+                <button class="modal-close" onclick="closeAddDeviceModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="add-deviceId">设备 ID *</label>
+                        <input type="text" id="add-deviceId" class="form-control" placeholder="例如: sensor-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-name">设备名称 *</label>
+                        <input type="text" id="add-name" class="form-control" placeholder="例如: 温度传感器 001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-type">设备类型 *</label>
+                        <select id="add-type" class="form-control" required>
+                            <option value="">请选择类型</option>
+                            <option value="sensor">传感器</option>
+                            <option value="camera">摄像头</option>
+                            <option value="actuator">执行器</option>
+                            <option value="controller">控制器</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-protocol">通讯协议 *</label>
+                        <select id="add-protocol" class="form-control" required>
+                            <option value="">请选择协议</option>
+                            <option value="mqtt">MQTT</option>
+                            <option value="http">HTTP</option>
+                            <option value="modbus-tcp">Modbus TCP</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="add-status">状态</label>
+                        <select id="add-status" class="form-control">
+                            <option value="online">在线</option>
+                            <option value="offline">离线</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddDeviceModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAddDevice()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Device Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>✏️ 编辑设备</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit-deviceId">设备 ID</label>
+                        <input type="text" id="edit-deviceId" class="form-control" readonly style="background: var(--color-muted);">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-name">设备名称</label>
+                        <input type="text" id="edit-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-type">设备类型</label>
+                        <select id="edit-type" class="form-control" required>
+                            <option value="sensor">传感器</option>
+                            <option value="camera">摄像头</option>
+                            <option value="actuator">执行器</option>
+                            <option value="controller">控制器</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-protocol">通讯协议</label>
+                        <select id="edit-protocol" class="form-control" required>
+                            <option value="mqtt">MQTT</option>
+                            <option value="http">HTTP</option>
+                            <option value="modbus-tcp">Modbus TCP</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="edit-status">状态</label>
+                        <select id="edit-status" class="form-control">
+                            <option value="online">在线</option>
+                            <option value="offline">离线</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveEditDevice()">保存更改</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/v1';
+        const HEALTH_CHECK_URL = 'http://localhost:3001/health';
+        let allDevices = [];
+
+        // Get type label
+        function getTypeLabel(type) {
+            const labels = {
+                'sensor': '传感器',
+                'camera': '摄像头',
+                'actuator': '执行器',
+                'controller': '控制器'
+            };
+            return labels[type] || type;
+        }
+
+        // Show toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'fadeIn 200ms ease-out reverse';
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 200);
+            }, 3000);
+        }
+
+        // Check API status
+        async function checkApiStatus() {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            try {
+                const response = await fetch(HEALTH_CHECK_URL);
+                const data = await response.json();
+
+                if (data.success) {
+                    statusDot.classList.remove('disconnected');
+                    statusText.textContent = `${data.data.mode}模式 - 已连接`;
+                } else {
+                    throw new Error('API response error');
+                }
+            } catch (error) {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = '未连接';
+                console.error('API connection failed:', error);
+            }
+        }
+
+        // Fetch devices
+        async function fetchDevices() {
+            const tbody = document.getElementById('device-table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text">加载中...</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE}/devices`);
+                const data = await response.json();
+                allDevices = data.data.devices;
+                applyFilters();
+                updateStats(allDevices);
+            } catch (error) {
+                console.error('Failed to fetch devices:', error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center;">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <h3>获取设备列表失败</h3>
+                                <p>请确保后端服务运行在 http://localhost:3001</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Update stats
+        function updateStats(devices) {
+            const totalDevices = devices.length;
+            const onlineDevices = devices.filter(d => d.status === 'online').length;
+            const offlineDevices = devices.filter(d => d.status === 'offline').length;
+            const alerts = offlineDevices;
+
+            document.getElementById('total-devices').textContent = totalDevices;
+            document.getElementById('online-devices').textContent = onlineDevices;
+            document.getElementById('offline-devices').textContent = offlineDevices;
+            document.getElementById('alerts').textContent = alerts;
+
+            document.querySelectorAll('.stat-value').forEach(el => {
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.style.animation = 'fadeIn 200ms ease-out';
+            });
+        }
+
+        // Render devices table
+        function renderDevices(devices) {
+            const tbody = document.getElementById('device-table-body');
+
+            if (devices.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center;">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <h3>暂无设备</h3>
+                                <p>使用右上角的"添加设备"按钮添加新设备</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = devices.map((device) => {
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500;">${device.name}</div>
+                        </td>
+                        <td>
+                            <code style="font-family: 'Fira Code', monospace; font-size: 0.875rem; color: var(--color-info);">${device.deviceId}</code>
+                        </td>
+                        <td>
+                            <span style="display: inline-block; padding: var(--spacing-xs) var(--spacing-sm); background: var(--color-muted); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--color-info);">${getTypeLabel(device.type)}</span>
+                        </td>
+                        <td>
+                            <span style="display: inline-block; padding: var(--spacing-xs) var(--spacing-sm); background: var(--color-muted); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--color-info);">${device.protocol}</span>
+                        </td>
+                        <td>
+                            <span class="status-badge ${device.status}">
+                                ${device.status === 'online' ? '在线' : '离线'}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: var(--spacing-sm);">
+                                <button class="btn btn-primary btn-sm" onclick="editDevice(${device.id})">
+                                    编辑
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteDevice(${device.id})">
+                                    删除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const filterType = document.getElementById('filter-type').value;
+            const filterProtocol = document.getElementById('filter-protocol').value;
+            const filterStatus = document.getElementById('filter-status').value;
+
+            let filteredDevices = allDevices.filter(device => {
+                const matchesSearch = !searchTerm ||
+                    device.name.toLowerCase().includes(searchTerm) ||
+                    device.deviceId.toLowerCase().includes(searchTerm);
+                const matchesType = !filterType || device.type === filterType;
+                const matchesProtocol = !filterProtocol || device.protocol === filterProtocol;
+                const matchesStatus = !filterStatus || device.status === filterStatus;
+
+                return matchesSearch && matchesType && matchesProtocol && matchesStatus;
+            });
+
+            renderDevices(filteredDevices);
+            updateStats(filteredDevices);
+        }
+
+        // Search devices
+        function searchDevices() {
+            applyFilters();
+        }
+
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-protocol').value = '';
+            document.getElementById('filter-status').value = '';
+            applyFilters();
+        }
+
+        // Add device modal
+        function openAddDeviceModal() {
+            document.getElementById('add-device-modal').classList.add('show');
+        }
+
+        function closeAddDeviceModal() {
+            document.getElementById('add-device-modal').classList.remove('show');
+        }
+
+        async function saveAddDevice() {
+            const deviceData = {
+                deviceId: document.getElementById('add-deviceId').value,
+                name: document.getElementById('add-name').value,
+                type: document.getElementById('add-type').value,
+                protocol: document.getElementById('add-protocol').value,
+                status: document.getElementById('add-status').value
+            };
+
+            if (!deviceData.deviceId || !deviceData.name || !deviceData.type || !deviceData.protocol) {
+                showToast('请填写所有必填项', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/devices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deviceData)
+                });
+
+                if (response.ok) {
+                    closeAddDeviceModal();
+                    fetchDevices();
+                    showToast('✅ 设备添加成功！');
+                } else {
+                    const data = await response.json();
+                    showToast(`❌ 添加失败: ${data.details}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to add device:', error);
+                showToast('❌ 添加设备失败，请检查网络连接', 'error');
+            }
+        }
+
+        // Edit device
+        let currentEditId = null;
+
+        async function editDevice(id) {
+            try {
+                const response = await fetch(`${API_BASE}/devices/${id}`);
+                const data = await response.json();
+                const device = data.data;
+
+                currentEditId = id;
+                document.getElementById('edit-id').value = device.id;
+                document.getElementById('edit-deviceId').value = device.deviceId;
+                document.getElementById('edit-name').value = device.name;
+                document.getElementById('edit-type').value = device.type;
+                document.getElementById('edit-protocol').value = device.protocol;
+                document.getElementById('edit-status').value = device.status;
+
+                document.getElementById('edit-modal').classList.add('show');
+            } catch (error) {
+                console.error('Failed to get device:', error);
+                showToast('❌ 获取设备信息失败', 'error');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+            currentEditId = null;
+        }
+
+        async function saveEditDevice() {
+            const deviceData = {
+                deviceId: document.getElementById('edit-deviceId').value,
+                name: document.getElementById('edit-name').value,
+                type: document.getElementById('edit-type').value,
+                protocol: document.getElementById('edit-protocol').value,
+                status: document.getElementById('edit-status').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/devices/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deviceData)
+                });
+
+                if (response.ok) {
+                    closeEditModal();
+                    fetchDevices();
+                    showToast('✅ 设备更新成功！');
+                } else {
+                    const data = await response.json();
+                    showToast(`❌ 更新失败: ${data.details}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to update device:', error);
+                showToast('❌ 更新设备失败，请检查网络连接', 'error');
+            }
+        }
+
+        // Delete device
+        async function deleteDevice(id) {
+            if (!confirm('确定要删除这个设备吗？此操作不可撤销。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/devices/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchDevices();
+                    showToast('✅ 设备删除成功！');
+                } else {
+                    const data = await response.json();
+                    showToast(`❌ 删除失败: ${data.details}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to delete device:', error);
+                showToast('❌ 删除设备失败，请检查网络连接', 'error');
+            }
+        }
+
+        // Modal click outside
+        document.getElementById('add-device-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'add-device-modal') {
+                closeAddDeviceModal();
+            }
+        });
+
+        document.getElementById('edit-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'edit-modal') {
+                closeEditModal();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkApiStatus();
+            fetchDevices();
+            setInterval(checkApiStatus, 30000);
+        });
+    </script>
+</body>
+</html>

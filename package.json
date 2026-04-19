@@ -1,0 +1,36 @@
+{
+  "name": "smart-construction-iot-platform",
+  "version": "1.0.0",
+  "description": "智慧工地物联网平台",
+  "scripts": {
+    "dev:frontend": "cd frontend-vue && npm run dev",
+    "dev:user-auth": "cd backend/services/user-auth && npm run dev",
+    "dev:data-storage": "cd backend/services/data-storage && npm run dev",
+    "dev:alerts-notifications": "cd backend/services/alerts-notifications && npm run dev",
+    "dev:device-management": "cd backend/services/device-management && npm run dev",
+    "build:frontend": "cd frontend-vue && npm run build",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:load": "node tests/load/load-test.js",
+    "test": "npm run test:unit && npm run test:integration",
+    "deploy:staging": "cd scripts && ./deploy.sh -e staging",
+    "deploy:production": "cd scripts && ./deploy.sh -e production",
+    "docker:up": "cd docker && docker compose up -d",
+    "docker:down": "cd docker && docker compose down",
+    "docker:logs": "cd docker && docker compose logs -f"
+  },
+  "keywords": [
+    "iot",
+    "smart-construction",
+    "construction",
+    "real-time",
+    "monitoring"
+  ],
+  "author": "Smart Construction Team",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "axios": "^1.6.5",
+    "supertest": "^6.3.4"
+  }
+}

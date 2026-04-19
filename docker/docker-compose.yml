@@ -147,6 +147,89 @@ services:
     networks:
       - smart-iot-network
 
+  # 数据存储与分析服务
+  data-storage:
+    build:
+      context: ../backend/services/data-storage
+      dockerfile: Dockerfile
+    container_name: smart-iot-data-storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: smartiot
+      MYSQL_PASSWORD: smartiot123
+      MYSQL_DATABASE: smartiot
+      INFLUX_HOST: influxdb
+      INFLUX_PORT: 8086
+      INFLUX_DATABASE: sensor-data
+      INFLUX_USER: smartiot
+      INFLUX_PASSWORD: smartiot123
+    ports:
+      - "3002:3002"
+    networks:
+      - smart-iot-network
+
+  # 告警与通知服务
+  alerts-notifications:
+    build:
+      context: ../backend/services/alerts-notifications
+      dockerfile: Dockerfile
+    container_name: smart-iot-alerts-notifications
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3004
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: smartiot
+      MYSQL_PASSWORD: smartiot123
+      MYSQL_DATABASE: smartiot
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+      SMTP_USER: no-reply@smartconstruction.com
+      SMTP_PASS: ""
+      TWILIO_ACCOUNT_SID: ""
+      TWILIO_AUTH_TOKEN: ""
+      TWILIO_PHONE_NUMBER: ""
+    ports:
+      - "3004:3004"
+    networks:
+      - smart-iot-network
+
+  # 用户认证服务
+  user-auth:
+    build:
+      context: ../backend/services/user-auth
+      dockerfile: Dockerfile
+    container_name: smart-iot-user-auth
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3005
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: smartiot
+      MYSQL_PASSWORD: smartiot123
+      MYSQL_DATABASE: smartiot
+      JWT_SECRET: my-super-secret-jwt-key
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "3005:3005"
+    networks:
+      - smart-iot-network
+
 volumes:
   mysql-data:
   influxdb-data:

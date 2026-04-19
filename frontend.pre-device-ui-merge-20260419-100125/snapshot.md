@@ -1,0 +1,104 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🏗️
+      - generic [ref=e7]:
+        - heading "智慧工地 IoT" [level=1] [ref=e8]
+        - paragraph [ref=e9]: 设备管理系统
+    - navigation [ref=e10]:
+      - generic [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 📊
+        - generic [ref=e13]: 设备管理
+      - generic [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 📈
+        - generic [ref=e16]: 实时监控
+      - generic [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: 🎥
+        - generic [ref=e19]: 视频管理
+      - generic [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: ⚠️
+        - generic [ref=e22]: 告警中心
+      - generic [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: ⚙️
+        - generic [ref=e25]: 系统设置
+    - generic [ref=e29]: demo模式 - 已连接
+  - main [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - heading "设备管理" [level=2] [ref=e33]
+        - paragraph [ref=e34]: 管理和监控您的物联网设备
+      - button "➕ 添加设备" [ref=e35] [cursor=pointer]
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]: 📊
+        - generic [ref=e39]:
+          - heading "总设备数" [level=3] [ref=e40]
+          - generic [ref=e41]: "1"
+          - generic [ref=e42]:
+            - generic [ref=e43]: ↑
+            - text: 2 新增
+      - generic [ref=e44]:
+        - generic [ref=e45]: 🟢
+        - generic [ref=e46]:
+          - heading "在线设备" [level=3] [ref=e47]
+          - generic [ref=e48]: "1"
+          - generic [ref=e49]:
+            - generic [ref=e50]: ↑
+            - text: 100% 正常
+      - generic [ref=e51]:
+        - generic [ref=e52]: 🔴
+        - generic [ref=e53]:
+          - heading "离线设备" [level=3] [ref=e54]
+          - generic [ref=e55]: "0"
+          - generic [ref=e56]:
+            - generic [ref=e57]: ↓
+            - text: 0% 异常
+      - generic [ref=e58]:
+        - generic [ref=e59]: 🚨
+        - generic [ref=e60]:
+          - heading "告警" [level=3] [ref=e61]
+          - generic [ref=e62]: "0"
+          - generic [ref=e63]:
+            - generic [ref=e64]: ↑
+            - text: 0 待处理
+    - generic [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]: 🔍
+          - heading "搜索和筛选" [level=2] [ref=e69]
+        - button "🔄 重置" [ref=e71] [cursor=pointer]
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - generic: 🔍
+          - textbox "搜索设备名称或 ID..." [ref=e74]
+        - combobox [ref=e76] [cursor=pointer]:
+          - option "全部类型" [selected]
+          - option "传感器"
+          - option "摄像头"
+          - option "执行器"
+          - option "控制器"
+        - combobox [ref=e78] [cursor=pointer]:
+          - option "全部协议" [selected]
+          - option "MQTT"
+          - option "HTTP"
+          - option "Modbus TCP"
+        - combobox [ref=e80] [cursor=pointer]:
+          - option "全部状态" [selected]
+          - option "在线"
+          - option "离线"
+    - generic [ref=e81]:
+      - generic [ref=e83]:
+        - generic [ref=e84]: 📋
+        - heading "设备列表" [level=2] [ref=e85]
+      - generic [ref=e87] [cursor=pointer]:
+        - generic [ref=e88]: 演
+        - generic [ref=e89]:
+          - heading "演示摄像头 009" [level=3] [ref=e90]
+          - paragraph [ref=e91]: demo-camera-001
+          - generic [ref=e92]:
+            - generic [ref=e93]: 摄像头
+            - generic [ref=e94]: http
+        - generic [ref=e95]: 在线
+        - generic [ref=e96]:
+          - button "编辑" [ref=e97]
+          - button "删除" [ref=e98]

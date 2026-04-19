@@ -1,0 +1,124 @@
+name: 智慧工地物联网平台 CI/CD 流水线
+
+on:
+  # 当推送到 main 分支时运行
+  push:
+    branches: [ main ]
+  # 当创建或更新 PR 时运行
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 前端测试作业
+  frontend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend-vue
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 运行前端测试
+        run: npm run test
+
+      - name: 构建前端应用
+        run: npm run build
+
+  # 后端测试作业
+  backend-tests:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      MYSQL_HOST: localhost
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: smartiot
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root123
+      JWT_SECRET: test_jwt_secret
+
+    services:
+      # 启动 MySQL 服务
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: smartiot
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 安装后端依赖
+        run: |
+          cd backend/services/user-auth && npm install
+          cd ../../services/data-storage && npm install
+          cd ../../services/alerts-notifications && npm install
+          cd ../../services/device-management && npm install
+
+      - name: 运行后端测试
+        run: |
+          cd backend/services/user-auth && npm run test
+          cd ../../services/data-storage && npm run test
+          cd ../../services/alerts-notifications && npm run test
+
+  # 部署作业（仅在 main 分支合并时运行）
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 安装部署工具
+        run: npm install -g pm2
+
+      - name: 连接到服务器并部署
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_SERVER_HOST }}
+          username: ${{ secrets.DEPLOY_SERVER_USER }}
+          password: ${{ secrets.DEPLOY_SERVER_PASSWORD }}
+          script: |
+            # 进入项目目录
+            cd /var/www/smart-construction-iot-platform
+
+            # 拉取最新代码
+            git pull origin main
+
+            # 安装依赖
+            cd frontend-vue && npm install && npm run build
+            cd ../backend/services/user-auth && npm install
+            cd ../../services/data-storage && npm install
+            cd ../../services/alerts-notifications && npm install
+            cd ../../services/device-management && npm install
+
+            # 重启 PM2 进程
+            pm2 restart user-auth data-storage alerts-notifications device-management
+
+            echo "部署成功！"

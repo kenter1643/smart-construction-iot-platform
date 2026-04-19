@@ -78,7 +78,7 @@ The implementation must define these JavaScript functions:
 
 - Create: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Write a failing static smoke test**
+- [x] **Step 1: Write a failing static smoke test**
 
 Create `frontend/ui-smoke-test.mjs` with this exact content:
 
@@ -172,7 +172,7 @@ assert(!forbiddenEmojiPattern.test(html), 'UI still contains emoji icons');
 console.log('UI smoke test passed');
 ```
 
-- [ ] **Step 2: Run the smoke test and verify it fails**
+- [x] **Step 2: Run the smoke test and verify it fails**
 
 Run:
 
@@ -182,7 +182,7 @@ node frontend/ui-smoke-test.mjs
 
 Expected: FAIL with `Missing required id: device-detail-panel` or `UI still contains emoji icons`.
 
-- [ ] **Step 3: Commit the failing smoke test**
+- [x] **Step 3: Commit the failing smoke test**
 
 Run:
 
@@ -200,7 +200,7 @@ Expected: commit succeeds and includes only `frontend/ui-smoke-test.mjs`.
 - Modify: `frontend/index.html`
 - Test: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Replace CSS variables and base layout**
+- [x] **Step 1: Replace CSS variables and base layout**
 
 In `frontend/index.html`, replace the existing `:root`, reset, body, `.app-container`, `.sidebar`, `.main-content`, `.top-header`, `.page-content`, `.btn`, `.form-control`, `.modal`, `.toast`, and responsive CSS sections with the mixed operations-admin design. Use these exact tokens:
 
@@ -292,7 +292,7 @@ Use this layout structure in the body:
 </div>
 ```
 
-- [ ] **Step 2: Replace emoji icons with inline SVG icons**
+- [x] **Step 2: Replace emoji icons with inline SVG icons**
 
 Use a small inline SVG pattern for each icon. Example:
 
@@ -304,7 +304,7 @@ Use a small inline SVG pattern for each icon. Example:
 
 Every functional icon must use `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">` and every icon-only button must include either visible text or `aria-label`.
 
-- [ ] **Step 3: Run the smoke test**
+- [x] **Step 3: Run the smoke test**
 
 Run:
 
@@ -321,7 +321,7 @@ Expected: still FAIL because details panel and function rewrites may not be comp
 - Modify: `frontend/index.html`
 - Test: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Replace the main content markup**
+- [x] **Step 1: Replace the main content markup**
 
 Replace the current page header, stats grid, filter card, and device table card with this structure:
 
@@ -441,11 +441,11 @@ Replace the current page header, stats grid, filter card, and device table card 
 </section>
 ```
 
-- [ ] **Step 2: Add responsive card fallback markup support**
+- [x] **Step 2: Add responsive card fallback markup support**
 
 Add CSS so `.content-grid` is two columns on desktop and one column under `1180px`. Under `720px`, hide the table header and render each row as stacked cells using `td::before { content: attr(data-label); }`.
 
-- [ ] **Step 3: Run the smoke test**
+- [x] **Step 3: Run the smoke test**
 
 Run:
 
@@ -462,7 +462,7 @@ Expected: may still FAIL on missing functions if JavaScript has not been updated
 - Modify: `frontend/index.html`
 - Test: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Add state variables**
+- [x] **Step 1: Add state variables**
 
 At the top of the `<script>` block, use:
 
@@ -476,7 +476,7 @@ let selectedDeviceId = null;
 let currentEditId = null;
 ```
 
-- [ ] **Step 2: Add formatting helpers**
+- [x] **Step 2: Add formatting helpers**
 
 Add these helpers:
 
@@ -513,7 +513,7 @@ function getDeviceInitial(device) {
 }
 ```
 
-- [ ] **Step 3: Implement `selectDevice` and `renderDeviceDetails`**
+- [x] **Step 3: Implement `selectDevice` and `renderDeviceDetails`**
 
 Use this implementation:
 
@@ -580,7 +580,7 @@ function renderDeviceDetails(device) {
 }
 ```
 
-- [ ] **Step 4: Run the smoke test**
+- [x] **Step 4: Run the smoke test**
 
 Run:
 
@@ -597,7 +597,7 @@ Expected: may still FAIL on render or emoji checks until all markup and toasts a
 - Modify: `frontend/index.html`
 - Test: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Replace `updateStats`**
+- [x] **Step 1: Replace `updateStats`**
 
 Use this implementation:
 
@@ -621,7 +621,7 @@ function updateStats(devices) {
 }
 ```
 
-- [ ] **Step 2: Replace `renderDevices`**
+- [x] **Step 2: Replace `renderDevices`**
 
 Use this implementation:
 
@@ -682,7 +682,7 @@ function renderDevices(devices) {
 }
 ```
 
-- [ ] **Step 3: Replace `applyFilters`, `searchDevices`, and `resetFilters`**
+- [x] **Step 3: Replace `applyFilters`, `searchDevices`, and `resetFilters`**
 
 Use this implementation:
 
@@ -722,7 +722,7 @@ function resetFilters() {
 }
 ```
 
-- [ ] **Step 4: Run the smoke test**
+- [x] **Step 4: Run the smoke test**
 
 Run:
 
@@ -739,7 +739,7 @@ Expected: all function-related checks should pass if previous tasks are complete
 - Modify: `frontend/index.html`
 - Test: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Replace `fetchDevices` and `checkApiStatus`**
+- [x] **Step 1: Replace `fetchDevices` and `checkApiStatus`**
 
 Use this implementation:
 
@@ -802,7 +802,7 @@ async function fetchDevices() {
 }
 ```
 
-- [ ] **Step 2: Update modal open/close functions**
+- [x] **Step 2: Update modal open/close functions**
 
 Use:
 
@@ -827,7 +827,7 @@ function closeEditModal() {
 }
 ```
 
-- [ ] **Step 3: Preserve `saveAddDevice`, `editDevice`, `saveEditDevice`, and `deleteDevice` API behavior**
+- [x] **Step 3: Preserve `saveAddDevice`, `editDevice`, `saveEditDevice`, and `deleteDevice` API behavior**
 
 Keep the same endpoints:
 
@@ -846,7 +846,7 @@ showToast('设备删除成功');
 showToast('操作失败，请检查网络连接', 'error');
 ```
 
-- [ ] **Step 4: Run the smoke test**
+- [x] **Step 4: Run the smoke test**
 
 Run:
 
@@ -863,7 +863,7 @@ Expected: PASS with `UI smoke test passed`.
 - Modify: `frontend/index.html`
 - Create: `frontend/ui-smoke-test.mjs`
 
-- [ ] **Step 1: Run static smoke test**
+- [x] **Step 1: Run static smoke test**
 
 Run:
 
@@ -877,7 +877,7 @@ Expected:
 UI smoke test passed
 ```
 
-- [ ] **Step 2: Start demo backend if needed**
+- [x] **Step 2: Start demo backend if needed**
 
 If the device management API is not running, run:
 
@@ -888,7 +888,7 @@ node src/demo-index.js
 
 Expected: demo service listens on `http://localhost:3001`.
 
-- [ ] **Step 3: Open the static frontend**
+- [x] **Step 3: Open the static frontend**
 
 Run:
 
@@ -898,7 +898,7 @@ open frontend/index.html
 
 Expected: browser opens the redesigned device management page.
 
-- [ ] **Step 4: Manual interaction checks**
+- [x] **Step 4: Manual interaction checks**
 
 Verify:
 
@@ -914,7 +914,7 @@ Verify:
 - Page has no emoji UI icons.
 - At 375px, 768px, 1024px, and 1440px widths, there is no horizontal page overflow.
 
-- [ ] **Step 5: Commit implementation**
+- [x] **Step 5: Commit implementation**
 
 Run:
 

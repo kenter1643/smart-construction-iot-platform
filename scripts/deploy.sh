@@ -24,10 +24,16 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
 # 默认配置
 DEPLOY_ENV="staging"
-PROJECT_DIR=$(pwd)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DOCKER_COMPOSE_FILE="${PROJECT_DIR}/docker/docker-compose.yml"
+SKIP_GIT_PULL="${SKIP_GIT_PULL:-0}"
 
 # 解析命令行参数
 while getopts "e:h" opt; do
@@ -77,7 +83,9 @@ print_success "Docker 环境检查通过"
 
 # 2. 拉取最新代码
 print_info "拉取最新代码..."
-if git rev-parse --git-dir > /dev/null 2>&1; then
+if [ "$SKIP_GIT_PULL" = "1" ]; then
+    print_warning "已设置 SKIP_GIT_PULL=1，跳过代码拉取"
+elif git rev-parse --git-dir > /dev/null 2>&1; then
     git pull origin main
     print_success "代码拉取成功"
 else
@@ -144,7 +152,7 @@ print_success "数据库迁移检查完成"
 if [ "$DEPLOY_ENV" = "staging" ]; then
     print_info "运行端到端集成测试..."
     cd "$PROJECT_DIR"
-    if npm run test:integration; then
+    if RUN_E2E=true npm run test:integration; then
         print_success "集成测试通过"
     else
         print_warning "集成测试失败，但继续部署"

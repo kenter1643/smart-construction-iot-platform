@@ -4,7 +4,10 @@ const fs = require('fs');
 const path = require('path');
 
 // 配置
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const AUTH_BASE = process.env.AUTH_BASE || 'http://localhost:3005';
+const DEVICE_BASE = process.env.DEVICE_BASE || 'http://localhost:3003';
+const DATA_BASE = process.env.DATA_BASE || 'http://localhost:3002';
+const ALERT_BASE = process.env.ALERT_BASE || 'http://localhost:3004';
 const CONCURRENT_USERS = parseInt(process.env.CONCURRENT_USERS || '100');
 const TEST_DURATION = parseInt(process.env.TEST_DURATION || '60'); // 秒
 const RESULTS_DIR = path.resolve(__dirname, 'results');
@@ -17,7 +20,10 @@ if (!fs.existsSync(RESULTS_DIR)) {
 console.log('🎯 开始智慧工地物联网平台负载测试');
 console.log(`🏗️  并发用户数: ${CONCURRENT_USERS}`);
 console.log(`⏱️  测试时长: ${TEST_DURATION}秒`);
-console.log(`🌐 目标 URL: ${BASE_URL}`);
+console.log(`🌐 AUTH: ${AUTH_BASE}`);
+console.log(`🌐 DEVICE: ${DEVICE_BASE}`);
+console.log(`🌐 DATA: ${DATA_BASE}`);
+console.log(`🌐 ALERT: ${ALERT_BASE}`);
 
 // 生成测试报告文件名
 const TEST_TIME = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
@@ -35,7 +41,12 @@ const log = (message) => {
 // 性能测试数据
 let results = {
   timestamp: TEST_TIME,
-  baseUrl: BASE_URL,
+  baseUrls: {
+    auth: AUTH_BASE,
+    device: DEVICE_BASE,
+    data: DATA_BASE,
+    alert: ALERT_BASE
+  },
   concurrentUsers: CONCURRENT_USERS,
   testDuration: TEST_DURATION,
   requests: 0,
@@ -53,15 +64,19 @@ const sendRequest = async (method, url, data = null) => {
     const config = {
       method,
       url,
-      data,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json'
       }
     };
 
-    // 如果需要认证，可以添加认证头部
-    if (url.includes('/auth')) {
+    if (method.toUpperCase() === 'GET' || method.toUpperCase() === 'DELETE') {
+      config.params = data || {};
+    } else if (data !== null) {
+      config.data = data;
+    }
+
+    if (process.env.TEST_TOKEN && !url.includes('/auth/login') && !url.includes('/auth/register')) {
       config.headers['Authorization'] = `Bearer ${process.env.TEST_TOKEN}`;
     }
 
@@ -117,7 +132,7 @@ const sendRequest = async (method, url, data = null) => {
 const userScenario = async () => {
   try {
     // 1. 登录
-    const loginResponse = await sendRequest('POST', `${BASE_URL}/api/v1/auth/login`, {
+    const loginResponse = await sendRequest('POST', `${AUTH_BASE}/api/v1/auth/login`, {
       username: 'e2e_test_user',
       password: 'password123'
     });
@@ -127,10 +142,10 @@ const userScenario = async () => {
     }
 
     // 2. 获取设备列表
-    await sendRequest('GET', `${BASE_URL}/api/v1/devices`);
+    await sendRequest('GET', `${DEVICE_BASE}/api/v1/devices`);
 
     // 3. 创建设备
-    await sendRequest('POST', `${BASE_URL}/api/v1/devices`, {
+    await sendRequest('POST', `${DEVICE_BASE}/api/v1/devices`, {
       deviceId: `test_device_${Math.floor(Math.random() * 10000)}`,
       name: '测试设备',
       type: 'sensor',
@@ -139,15 +154,13 @@ const userScenario = async () => {
     });
 
     // 4. 获取传感器数据
-    await sendRequest('GET', `${BASE_URL}/api/v1/data/sensor`, {
-      params: {
-        deviceId: 'DEV-001',
-        limit: 10
-      }
+    await sendRequest('GET', `${DATA_BASE}/api/v1/data/sensor`, {
+      deviceId: 'DEV-001',
+      limit: 10
     });
 
     // 5. 获取告警列表
-    await sendRequest('GET', `${BASE_URL}/api/v1/alerts/history`);
+    await sendRequest('GET', `${ALERT_BASE}/api/v1/alerts/history`);
   } catch (error) {
     log(`❌ 用户场景执行失败: ${error.message}`);
     results.errors++;
@@ -205,10 +218,22 @@ const runLoadTest = async () => {
 const main = async () => {
   try {
     // 检查服务是否可用
-    await sendRequest('GET', `${BASE_URL}/api/v1/auth/health`);
+    const healthChecks = [
+      { name: 'auth', url: `${AUTH_BASE}/health` },
+      { name: 'device', url: `${DEVICE_BASE}/health` },
+      { name: 'data', url: `${DATA_BASE}/health` },
+      { name: 'alert', url: `${ALERT_BASE}/health` }
+    ];
+
+    for (const check of healthChecks) {
+      const response = await sendRequest('GET', check.url);
+      if (!response || !response.status || response.status >= 400) {
+        throw new Error(`服务 ${check.name} 不可用: ${check.url}`);
+      }
+    }
 
     // 初始化测试用户（如果不存在）
-    await sendRequest('POST', `${BASE_URL}/api/v1/auth/register`, {
+    await sendRequest('POST', `${AUTH_BASE}/api/v1/auth/register`, {
       username: 'e2e_test_user',
       email: 'e2e_test@example.com',
       password: 'password123',

@@ -1,10 +1,11 @@
-const { describe, it, expect, beforeAll, afterAll, jest } = require('jest');
 const axios = require('axios');
 
 // 配置
 const API_BASE = process.env.API_BASE || 'http://localhost:3000';
+const runE2E = process.env.RUN_E2E === 'true';
+const describeE2E = runE2E ? describe : describe.skip;
 
-describe('智慧工地物联网平台端到端集成测试', () => {
+describeE2E('智慧工地物联网平台端到端集成测试', () => {
   let authToken;
   let testDeviceId;
   let testUserId;

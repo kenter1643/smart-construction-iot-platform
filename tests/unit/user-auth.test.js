@@ -1,6 +1,6 @@
-const { describe, it, expect, beforeEach, afterEach, jest } = require('jest');
 const authController = require('../../backend/services/user-auth/src/controllers/authController');
 const { getMySQLPool } = require('../../backend/services/user-auth/src/utils/db');
+const bcrypt = require('bcryptjs');
 
 // 模拟数据库操作
 jest.mock('../../backend/services/user-auth/src/utils/db');
@@ -74,6 +74,8 @@ describe('用户身份认证系统单元测试', () => {
 
   describe('用户登录', () => {
     it('应该成功登录', async () => {
+      const passwordHash = await bcrypt.hash('password123', 10);
+
       // 模拟数据库操作
       getMySQLPool.mockReturnValue({
         execute: jest.fn().mockImplementation(query => {
@@ -82,7 +84,7 @@ describe('用户身份认证系统单元测试', () => {
               id: 1,
               username: 'testuser',
               email: 'test@example.com',
-              password_hash: 'hashedpassword',
+              password_hash: passwordHash,
               status: 'active'
             }], []];
           }
@@ -95,7 +97,9 @@ describe('用户身份认证系统单元测试', () => {
         body: {
           username: 'testuser',
           password: 'password123'
-        }
+        },
+        ip: '127.0.0.1',
+        get: jest.fn().mockReturnValue('jest-test-agent')
       };
 
       const res = {
@@ -139,11 +143,13 @@ describe('用户身份认证系统单元测试', () => {
 
   describe('密码修改', () => {
     it('应该成功修改密码', async () => {
+      const oldPasswordHash = await bcrypt.hash('oldpassword', 10);
+
       // 模拟数据库操作
       getMySQLPool.mockReturnValue({
         execute: jest.fn().mockImplementation(query => {
           if (query.includes('password_hash')) {
-            return [[{ password_hash: 'oldpasswordhash' }], []];
+            return [[{ password_hash: oldPasswordHash }], []];
           }
           return [[], []];
         })
@@ -171,11 +177,13 @@ describe('用户身份认证系统单元测试', () => {
     });
 
     it('应该拒绝无效的当前密码', async () => {
+      const oldPasswordHash = await bcrypt.hash('oldpassword', 10);
+
       // 模拟数据库操作
       getMySQLPool.mockReturnValue({
         execute: jest.fn().mockImplementation(query => {
           if (query.includes('password_hash')) {
-            return [[{ password_hash: 'oldpasswordhash' }], []];
+            return [[{ password_hash: oldPasswordHash }], []];
           }
           return [[], []];
         })

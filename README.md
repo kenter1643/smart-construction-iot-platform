@@ -61,6 +61,18 @@ npm install
 npm run dev
 ```
 
+### 运行测试
+
+```bash
+npm install
+npm test
+```
+
+说明：
+- `test:unit` 默认执行核心模块单元测试
+- `test:integration` 默认跳过 E2E（防止未启动环境导致 CI 失败）
+- 如需真实 E2E，请先启动完整 API，再执行 `RUN_E2E=true npm run test:integration`
+
 ### 启动 Rust 设备管理服务
 
 ```bash
@@ -74,6 +86,18 @@ cargo run
 ```bash
 cd kubernetes
 kubectl apply -f .
+```
+
+### 暂存环境部署
+
+```bash
+npm run deploy:staging
+```
+
+### 负载测试
+
+```bash
+BASE_URL=http://localhost:3000 CONCURRENT_USERS=100 TEST_DURATION=60 npm run test:load
 ```
 
 ## 许可证

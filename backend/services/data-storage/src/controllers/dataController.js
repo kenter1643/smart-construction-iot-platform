@@ -6,6 +6,12 @@ const { getMySQLPool, getInfluxClient } = require('../utils/db');
 async function storeSensorData(req, res, next) {
   try {
     const { deviceId, type, location, value, unit, timestamp } = req.body;
+    if (!deviceId || !type || value === undefined || value === null) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        details: 'deviceId, type and value are required'
+      });
+    }
     const time = timestamp ? new Date(timestamp) : new Date();
 
     // 使用 InfluxDB 存储时间序列数据

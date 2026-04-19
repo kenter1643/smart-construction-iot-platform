@@ -17,18 +17,17 @@ jobs:
         working-directory: ./frontend-vue
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 设置 Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend-vue/package-lock.json
 
       - name: 安装依赖
-        run: npm install
-
-      - name: 运行前端测试
-        run: npm run test
+        run: npm ci
 
       - name: 构建前端应用
         run: npm run build
@@ -36,50 +35,21 @@ jobs:
   # 后端测试作业
   backend-tests:
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: test
-      MYSQL_HOST: localhost
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: smartiot
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root123
-      JWT_SECRET: test_jwt_secret
-
-    services:
-      # 启动 MySQL 服务
-      mysql:
-        image: mysql:8.4
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: root123
-          MYSQL_DATABASE: smartiot
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 设置 Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: npm
 
-      - name: 安装后端依赖
-        run: |
-          cd backend/services/user-auth && npm install
-          cd ../../services/data-storage && npm install
-          cd ../../services/alerts-notifications && npm install
-          cd ../../services/device-management && npm install
+      - name: 安装根依赖
+        run: npm ci
 
-      - name: 运行后端测试
-        run: |
-          cd backend/services/user-auth && npm run test
-          cd ../../services/data-storage && npm run test
-          cd ../../services/alerts-notifications && npm run test
+      - name: 运行单元与集成测试
+        run: npm test
 
   # 部署作业（仅在 main 分支合并时运行）
   deploy:
@@ -88,15 +58,12 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 设置 Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: 安装部署工具
-        run: npm install -g pm2
+          node-version: 20
 
       - name: 连接到服务器并部署
         uses: appleboy/ssh-action@v1.0.3

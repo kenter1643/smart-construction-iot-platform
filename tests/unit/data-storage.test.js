@@ -1,10 +1,42 @@
-const { describe, it, expect, beforeEach, afterEach, jest } = require('jest');
 const dataController = require('../../backend/services/data-storage/src/controllers/dataController');
 
 // 模拟数据库操作
-jest.mock('../../backend/services/data-storage/src/utils/db');
+jest.mock('../../backend/services/data-storage/src/utils/db', () => ({
+  getMySQLPool: jest.fn(),
+  getInfluxClient: jest.fn()
+}));
+
+const { getMySQLPool, getInfluxClient } = require('../../backend/services/data-storage/src/utils/db');
 
 describe('数据存储与分析模块单元测试', () => {
+  // 在每个测试前配置模拟
+  beforeEach(() => {
+    // 重置所有模拟
+    jest.clearAllMocks();
+
+    // 模拟 InfluxDB 客户端
+    const mockInfluxClient = {
+      writePoints: jest.fn().mockResolvedValue(),
+      query: jest.fn().mockResolvedValue([
+        {
+          deviceId: 'DEV-001',
+          type: 'temperature',
+          location: 'site-1',
+          value: 28.5,
+          unit: '°C',
+          time: new Date().toISOString()
+        }
+      ])
+    };
+
+    // 模拟 MySQL 连接池
+    const mockMySQLPool = {
+      execute: jest.fn().mockResolvedValue([[], []])
+    };
+
+    getMySQLPool.mockReturnValue(mockMySQLPool);
+    getInfluxClient.mockReturnValue(mockInfluxClient);
+  });
   describe('传感器数据存储', () => {
     it('应该成功存储传感器数据', async () => {
       // 准备测试数据
@@ -25,7 +57,8 @@ describe('数据存储与分析模块单元测试', () => {
       };
 
       // 执行测试
-      await dataController.storeSensorData(req, res);
+      const next = jest.fn();
+      await dataController.storeSensorData(req, res, next);
 
       // 验证结果
       expect(res.status).toHaveBeenCalledWith(201);
@@ -48,7 +81,8 @@ describe('数据存储与分析模块单元测试', () => {
       };
 
       // 执行测试
-      await dataController.storeSensorData(req, res);
+      const next = jest.fn();
+      await dataController.storeSensorData(req, res, next);
 
       // 验证结果
       expect(res.status).toHaveBeenCalledWith(400);
@@ -72,7 +106,8 @@ describe('数据存储与分析模块单元测试', () => {
       };
 
       // 执行测试
-      await dataController.getSensorData(req, res);
+      const next = jest.fn();
+      await dataController.getSensorData(req, res, next);
 
       // 验证结果
       expect(res.status).toHaveBeenCalledWith(200);
@@ -97,7 +132,8 @@ describe('数据存储与分析模块单元测试', () => {
       };
 
       // 执行测试
-      await dataController.getSensorData(req, res);
+      const next = jest.fn();
+      await dataController.getSensorData(req, res, next);
 
       // 验证结果
       expect(res.status).toHaveBeenCalledWith(200);
@@ -122,7 +158,8 @@ describe('数据存储与分析模块单元测试', () => {
       };
 
       // 执行测试
-      await dataController.analyzeData(req, res);
+      const next = jest.fn();
+      await dataController.analyzeData(req, res, next);
 
       // 验证结果
       expect(res.status).toHaveBeenCalledWith(200);
@@ -148,7 +185,8 @@ describe('数据存储与分析模块单元测试', () => {
         };
 
         // 执行测试
-        await dataController.analyzeData(req, res);
+        const next = jest.fn();
+        await dataController.analyzeData(req, res, next);
 
         // 验证结果
         expect(res.status).toHaveBeenCalledWith(200);

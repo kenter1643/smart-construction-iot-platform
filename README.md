@@ -21,7 +21,7 @@
 
 ## 项目结构
 
-```
+```text
 smart-construction-iot-platform/
 ├── backend/
 │   ├── services/

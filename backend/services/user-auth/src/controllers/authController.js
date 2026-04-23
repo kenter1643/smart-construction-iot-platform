@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getMySQLPool } = require('../utils/db');
+const { buildInClause } = require('../utils/accessControl');
 
 /**
  * 注册新用户
@@ -176,11 +177,18 @@ async function getProfile(req, res, next) {
     `, [req.user.id]);
 
     // 获取用户权限
-    const [permissions] = await pool.execute(`
-      SELECT p.name FROM role_permissions rp
-      JOIN permissions p ON rp.permission_id = p.id
-      WHERE rp.role_id IN (${userRoles.map(role => role.id).join(',')})
-    `);
+    let permissions = [];
+    if (userRoles.length > 0) {
+      const inRoles = buildInClause(userRoles.map((role) => role.id));
+      const [permissionRows] = await pool.execute(
+        `SELECT p.name
+         FROM role_permissions rp
+         JOIN permissions p ON rp.permission_id = p.id
+         WHERE rp.role_id IN ${inRoles.clause}`,
+        inRoles.params
+      );
+      permissions = permissionRows;
+    }
 
     res.status(200).json({
       success: true,

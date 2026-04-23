@@ -162,6 +162,30 @@ describe('DeviceController', () => {
     expect(res.body.data.pagination.total).toBe(1);
   });
 
+  test('getDevices should apply data-scope filter when access profile exists', async () => {
+    const req = {
+      query: { page: '1', limit: '10' },
+      user: { id: 8 },
+      accessProfile: {
+        dataScope: {
+          scopeTypes: ['DEPT_AND_CHILD'],
+          departmentIds: [3, 4],
+          selfOnly: false
+        }
+      }
+    };
+    const res = createRes();
+
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] });
+
+    await DeviceController.getDevices(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(mockQuery.mock.calls[0][0]).toContain('department_id = ANY');
+  });
+
   test('getDeviceById should return 404 for non-existing device', async () => {
     const req = { params: { id: '999' } };
     const res = createRes();

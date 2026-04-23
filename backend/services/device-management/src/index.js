@@ -3,7 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const deviceRoutes = require('./routes/devices');
-const { testConnections } = require('./utils/db');
+const { testConnections, ensureDeviceSchema } = require('./utils/db');
 
 // 创建 Express 应用
 const app = express();
@@ -64,6 +64,8 @@ const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {
   try {
+    await ensureDeviceSchema();
+
     // 测试数据库连接
     const connectionsOk = await testConnections();
 

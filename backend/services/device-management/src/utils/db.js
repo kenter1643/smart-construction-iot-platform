@@ -19,6 +19,13 @@ const influxClient = new Influx.InfluxDB({
   bucket: process.env.INFLUXDB_BUCKET || 'sensor-data'
 });
 
+async function ensureDeviceSchema() {
+  await pgPool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS department_id INTEGER`);
+  await pgPool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
+  await pgPool.query(`CREATE INDEX IF NOT EXISTS idx_devices_department_id ON devices(department_id)`);
+  await pgPool.query(`CREATE INDEX IF NOT EXISTS idx_devices_owner_user_id ON devices(owner_user_id)`);
+}
+
 // 测试连接
 const testConnections = async () => {
   try {
@@ -40,5 +47,6 @@ const testConnections = async () => {
 module.exports = {
   pgPool,
   influxClient,
+  ensureDeviceSchema,
   testConnections
 };

@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
 const { getMySQLPool } = require('../utils/db');
+const { buildInClause } = require('../utils/accessControl');
 
 /**
  * JWT 认证中间件
  */
 function authenticateToken(req, res, next) {
-  // 从请求头获取授权信息
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
@@ -45,7 +45,6 @@ function authenticateToken(req, res, next) {
         });
       }
 
-      // 将用户信息添加到 req 中
       req.user = {
         id: users[0].id,
         username: users[0].username,
@@ -67,30 +66,41 @@ function authenticateToken(req, res, next) {
 /**
  * 权限检查中间件
  */
-async function requirePermission(requiredPermission) {
+function requirePermission(requiredPermission) {
   return async (req, res, next) => {
     try {
       const pool = getMySQLPool();
+      const [userRoles] = await pool.execute(
+        `SELECT r.name, r.id
+         FROM user_roles ur
+         JOIN roles r ON ur.role_id = r.id
+         WHERE ur.user_id = ?`,
+        [req.user.id]
+      );
 
-      // 获取用户角色
-      const [userRoles] = await pool.execute(`
-        SELECT r.name, r.id FROM user_roles ur
-        JOIN roles r ON ur.role_id = r.id
-        WHERE ur.user_id = ?
-      `, [req.user.id]);
-
-      // 如果是管理员，直接允许
-      if (userRoles.some(role => role.name === 'admin')) {
+      if (userRoles.some((role) => role.name === 'admin')) {
         return next();
       }
 
-      // 检查用户是否具有所需权限
-      const [permissions] = await pool.execute(`
-        SELECT p.name FROM role_permissions rp
-        JOIN permissions p ON rp.permission_id = p.id
-        WHERE rp.role_id IN (${userRoles.map(role => role.id).join(',')})
-          AND (p.name = ? OR p.name = '${requiredPermission.split('.')[0]}.*')
-      `, [requiredPermission]);
+      const roleIds = userRoles.map((role) => role.id);
+      if (roleIds.length === 0) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          details: `You do not have the required permission: ${requiredPermission}`
+        });
+      }
+
+      const inRole = buildInClause(roleIds);
+      const wildcardPermission = `${requiredPermission.split('.')[0]}.*`;
+      const [permissions] = await pool.execute(
+        `SELECT p.name
+         FROM role_permissions rp
+         JOIN permissions p ON rp.permission_id = p.id
+         WHERE rp.role_id IN ${inRole.clause}
+           AND (p.name = ? OR p.name = ?)
+         LIMIT 1`,
+        [...inRole.params, requiredPermission, wildcardPermission]
+      );
 
       if (permissions.length > 0) {
         return next();
@@ -113,19 +123,19 @@ async function requirePermission(requiredPermission) {
 /**
  * 角色检查中间件
  */
-async function requireRole(requiredRole) {
+function requireRole(requiredRole) {
   return async (req, res, next) => {
     try {
       const pool = getMySQLPool();
+      const [userRoles] = await pool.execute(
+        `SELECT r.name
+         FROM user_roles ur
+         JOIN roles r ON ur.role_id = r.id
+         WHERE ur.user_id = ?`,
+        [req.user.id]
+      );
 
-      // 获取用户角色
-      const [userRoles] = await pool.execute(`
-        SELECT r.name FROM user_roles ur
-        JOIN roles r ON ur.role_id = r.id
-        WHERE ur.user_id = ?
-      `, [req.user.id]);
-
-      if (userRoles.some(role => role.name === requiredRole || role.name === 'admin')) {
+      if (userRoles.some((role) => role.name === requiredRole || role.name === 'admin')) {
         return next();
       }
 

@@ -255,15 +255,22 @@ async function getAlertHistory(req, res, next) {
  */
 async function getUnresolvedAlerts(req, res, next) {
   try {
+    const { deviceId } = req.query || {};
     const pool = getMySQLPool();
 
-    const [results] = await pool.execute(
-      `SELECT ah.*, ar.rule_name FROM alert_history ah
-       JOIN alert_rules ar ON ah.rule_id = ar.id
-       WHERE ah.resolved = false
-       ORDER BY ah.triggered_at DESC
-       LIMIT 100`
-    );
+    let query = `
+      SELECT ah.*, ar.rule_name FROM alert_history ah
+      JOIN alert_rules ar ON ah.rule_id = ar.id
+      WHERE ah.resolved = false
+    `;
+    const params = [];
+    if (deviceId) {
+      query += ' AND ah.device_id = ?';
+      params.push(deviceId);
+    }
+    query += ' ORDER BY ah.triggered_at DESC LIMIT 100';
+
+    const [results] = await pool.execute(query, params);
 
     res.status(200).json({
       success: true,
@@ -338,11 +345,21 @@ async function createNotification(req, res, next) {
  */
 async function getNotifications(req, res, next) {
   try {
-    const { alertRuleId, notificationType, enabled, limit, offset } = req.query;
+    const { deviceId, alertRuleId, notificationType, enabled, limit, offset } = req.query;
     const pool = getMySQLPool();
 
-    let query = `SELECT * FROM notification_configs WHERE 1=1`;
+    let query = `
+      SELECT nc.*
+      FROM notification_configs nc
+      JOIN alert_rules ar ON ar.id = nc.alert_rule_id
+      WHERE 1=1
+    `;
     const params = [];
+
+    if (deviceId) {
+      query += ' AND ar.device_id = ?';
+      params.push(deviceId);
+    }
 
     if (alertRuleId) {
       query += ' AND alert_rule_id = ?';
@@ -466,10 +483,10 @@ async function testNotification(req, res, next) {
  */
 async function getAlertStats(req, res, next) {
   try {
-    const { startTime, endTime } = req.query;
+    const { deviceId, startTime, endTime } = req.query;
     const pool = getMySQLPool();
 
-    const [results] = await pool.execute(`
+    let query = `
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low_count,
@@ -480,7 +497,14 @@ async function getAlertStats(req, res, next) {
         SUM(CASE WHEN resolved = false THEN 1 ELSE 0 END) as unresolved_count
       FROM alert_history
       WHERE triggered_at BETWEEN ? AND ?
-    `, [startTime, endTime]);
+    `;
+    const params = [startTime, endTime];
+    if (deviceId) {
+      query += ' AND device_id = ?';
+      params.push(deviceId);
+    }
+
+    const [results] = await pool.execute(query, params);
 
     res.status(200).json({
       success: true,

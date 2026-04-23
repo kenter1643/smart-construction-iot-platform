@@ -103,3 +103,22 @@ BASE_URL=http://localhost:3000 CONCURRENT_USERS=100 TEST_DURATION=60 npm run tes
 ## 许可证
 
 MIT
+
+## 认证与权限（跨服务）
+
+当前已在核心服务启用统一鉴权与权限校验：
+
+- 所有受保护接口需携带 `Authorization: Bearer <JWT_TOKEN>`
+- 缺少 token 返回 `401`，无效/过期 token 返回 `403`
+- 服务会通过认证服务访问画像接口拉取权限与数据范围（`/api/v1/auth/access/profile`）
+- 设备相关数据接口按设备范围执行数据规则校验（部门/数据范围）
+
+常用环境变量：
+
+- `JWT_SECRET`：JWT 验签密钥（需与 user-auth 一致）
+- `AUTH_SERVICE_BASE`：认证服务地址（默认 `http://localhost:3005/api/v1/auth`）
+
+更详细的服务权限映射与上线说明见：
+
+- `docs/requirements-baseline/authz-parity-rollout.md`
+

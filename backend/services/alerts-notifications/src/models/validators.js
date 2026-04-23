@@ -48,6 +48,7 @@ const createNotification = Joi.object({
 
 // 列出通知配置查询参数验证
 const listNotifications = Joi.object({
+  deviceId: Joi.string(),
   alertRuleId: Joi.number().integer(),
   notificationType: Joi.string().valid('email', 'sms'),
   enabled: Joi.boolean(),
@@ -64,6 +65,7 @@ const testNotification = Joi.object({
 
 // 获取告警统计查询参数验证
 const getStats = Joi.object({
+  deviceId: Joi.string(),
   startTime: Joi.date().iso().required(),
   endTime: Joi.date().iso().required()
 });

@@ -1,0 +1,2 @@
+[2026-04-19T16:27:47.435Z] ❌ GET http://localhost:3005/health - ERROR (21ms)
+[2026-04-19T16:27:47.437Z] 💥 测试过程中出现错误: 服务 auth 不可用: http://localhost:3005/health
